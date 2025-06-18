@@ -48,10 +48,10 @@ app.json_encoder = CustomJSONEncoder
 
 # MySQL Connection Pool Configuration
 db_config = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD'),  # Must be provided via environment variable
-    'database': os.getenv('DB_NAME', 'lawfort'),
+    'host': os.getenv('DB_HOST', 'mysql-1c58266a-prabhjotjaswal08-77ed.e.aivencloud.com'),
+    'user': os.getenv('DB_USER', 'avnadmin'),
+    'password': os.getenv('DB_PASSWORD','AVNS_IJYG8aEFX5D0ugOuMng'),  # Must be provided via environment variable
+    'database': os.getenv('DB_NAME', 'defaultdb'),
     'pool_name': 'lawfort_pool',
     'pool_size': int(os.getenv('DB_POOL_SIZE', 5)),
     'autocommit': True,
