@@ -27,4 +27,16 @@ export default defineConfig(({ mode }) => ({
       "@/config": path.resolve(__dirname, "./src/config"),
     },
   },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(mode),
+  },
 }));
