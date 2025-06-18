@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: lawfort-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --config gunicorn.conf.py app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: 1
+      # Add your database environment variables here
+      - key: DB_HOST
+        sync: mysql-1c58266a-prabhjotjaswal08-77ed.e.aivencloud.com
+      - key: DB_PORT
+        sync: 14544
+      - key: DB_USER
+        sync: avnadmin
+      - key: DB_PASSWORD
+        sync: AVNS_IJYG8aEFX5D0ugOuMng
+      - key: DB_NAME
+        sync: defaultdb
+      - key: SECRET_KEY
+        sync: pabbo@123
+      - key: FRONTEND_URL
+        value: https://legal-logs.onrender.com
