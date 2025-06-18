@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Upload, FileText, AlertCircle, CheckCircle, Link as LinkIcon } from 'lucide-react';
 import ResearchPaperPDFUpload from '@/components/research/ResearchPaperPDFUpload';
+import { API_BASE_URL } from '@/services/api';
 
 const SubmitResearchPaper = () => {
   const navigate = useNavigate();
@@ -80,7 +81,7 @@ const SubmitResearchPaper = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:5000/api/research-papers/submit/upload-pdf', {
+      const response = await fetch(`${API_BASE_URL}/api/research-papers/submit/upload-pdf`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('session_token')}`,
