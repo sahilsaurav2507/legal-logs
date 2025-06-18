@@ -10,7 +10,12 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(),
+    react({
+      // Ensure proper JSX transformation for production
+      jsxImportSource: 'react',
+      // Enable fast refresh for development
+      fastRefresh: mode === 'development',
+    }),
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
@@ -33,10 +38,35 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: undefined,
+        // Ensure proper chunk naming
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
+    // Ensure proper minification and dead code elimination
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production',
+        drop_debugger: mode === 'production',
+        pure_funcs: mode === 'production' ? ['console.log', 'console.info', 'console.debug', 'console.warn'] : [],
+      },
+    },
+    // Optimize chunk size
+    chunkSizeWarningLimit: 1000,
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode),
+    // Ensure React is properly configured for production
+    __DEV__: mode === 'development',
+    global: 'globalThis',
   },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
+    exclude: ['@vitejs/plugin-react-swc'],
+  },
+  // Ensure proper asset handling
+  assetsInclude: ['**/*.pdf', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg'],
 }));

@@ -1,12 +1,11 @@
 services:
   - type: web
     name: lawfort-frontend
-    env: node
+    env: static
     buildCommand: npm ci && npm run build
-    startCommand: npm run preview
+    staticPublishPath: ./dist
     envVars:
       - key: NODE_VERSION
         value: 18
       - key: NPM_CONFIG_PRODUCTION
         value: false
-    staticPublishPath: ./dist
