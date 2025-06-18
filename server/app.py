@@ -49,14 +49,12 @@ app.json_encoder = CustomJSONEncoder
 # MySQL Connection Pool Configuration
 db_config = {
     'host': os.getenv('DB_HOST', 'mysql-1c58266a-prabhjotjaswal08-77ed.e.aivencloud.com'),
+    'port': int(os.getenv('DB_PORT', 14544)),
     'user': os.getenv('DB_USER', 'avnadmin'),
-    'password': os.getenv('DB_PASSWORD','AVNS_IJYG8aEFX5D0ugOuMng'),  # Must be provided via environment variable
+    'password': os.getenv('DB_PASSWORD', 'AVNS_IJYG8aEFX5D0ugOuMng'),  # Default to your current password if env var not set
     'database': os.getenv('DB_NAME', 'defaultdb'),
     'pool_name': 'lawfort_pool',
-    'pool_size': int(os.getenv('DB_POOL_SIZE', 5)),
-    'autocommit': True,
-    'charset': 'utf8mb4',
-    'collation': 'utf8mb4_unicode_ci'
+    'pool_size': int(os.getenv('DB_POOL_SIZE', 5))
 }
 
 # Create connection pool
@@ -6233,7 +6231,7 @@ def update_internship_application_status(user_id, application_id):
 # Health check endpoint
 @app.route('/', methods=['GET'])
 @app.route('/health', methods=['GET'])
-def health_check():
+def health_check_root():
     try:
         # Test database connection
         connection = get_db_connection()
