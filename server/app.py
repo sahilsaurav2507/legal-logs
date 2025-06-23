@@ -23,9 +23,9 @@ load_dotenv()
 app = Flask(__name__)
 # Enable CORS for all routes with specific configuration
 # Get allowed origins from environment variable, fallback to localhost for development
-allowed_origins = os.getenv('FRONTEND_URL', 'http://localhost:8080','https://legal-logs.onrender.com').split(',')
+allowed_origins = os.getenv('FRONTEND_URL','https://legal-logs.onrender.com').split(',')
 # Add common development URLs
-allowed_origins.extend(['http://localhost:8080', 'http://localhost:8081','https://legal-logs.onrender.com'])
+allowed_origins.extend(['https://legal-logs.onrender.com'])
 
 CORS(app, resources={
     r"/*": {
