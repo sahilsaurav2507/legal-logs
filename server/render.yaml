@@ -6,14 +6,19 @@ services:
       apt-get update && apt-get install -y poppler-utils
       pip install -r requirements.txt
     startCommand: gunicorn --config gunicorn.conf.py app:app
+    # Force rebuild - updated database config
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11
+        value: 3.11.8
       - key: FLASK_ENV
         value: production
       - key: PYTHONUNBUFFERED
         value: 1
-      # Add your database environment variables here
+      - key: PORT
+        value: 5000
+      - key: WEB_CONCURRENCY
+        value: 2
+      # Database Configuration
       - key: DB_HOST
         value: mysql-1c58266a-prabhjotjaswal08-77ed.e.aivencloud.com
       - key: DB_PORT
@@ -24,9 +29,44 @@ services:
         value: AVNS_IJYG8aEFX5D0ugOuMng
       - key: DB_NAME
         value: defaultdb
+      - key: DB_POOL_SIZE
+        value: 31
+      # Application Configuration
       - key: SECRET_KEY
         value: pabbo@123
       - key: FRONTEND_URL
-        value: https://legal-logs.onrender.com
+        value: https://www.lawvriksh.com/
+      - key: DEBUG_MODE
+        value: false
+      - key: LOG_LEVEL
+        value: INFO
+      # API Keys
       - key: GROQ_API_KEY
         value: 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
+      - key: GOOGLE_CLIENT_ID
+        value: 517818204697-jpimspqvc3f4folciiapr6vbugs9t7hu.apps.googleusercontent.com
+      # Feature Configuration
+      - key: CREDIT_PER_LIKE
+        value: 10
+      - key: GRAMMAR_CHECK_ENABLED
+        value: true
+      - key: LANGUAGE_TOOL_LANGUAGE
+        value: en-US
+      - key: RATE_LIMIT_ENABLED
+        value: true
+      - key: RATE_LIMIT_PER_MINUTE
+        value: 60
+      # File Upload Configuration
+      - key: MAX_FILE_SIZE
+        value: 5242880
+      - key: ALLOWED_EXTENSIONS
+        value: pdf,jpg,jpeg,png
+      - key: PDF_THUMBNAIL_WIDTH
+        value: 400
+      - key: PDF_THUMBNAIL_HEIGHT
+        value: 300
+      - key: PDF_THUMBNAIL_QUALITY
+        value: 95
+      # Session Configuration
+      - key: SESSION_TIMEOUT
+        value: 86400
