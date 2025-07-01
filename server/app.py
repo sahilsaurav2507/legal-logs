@@ -90,7 +90,7 @@ app = Flask(__name__)
 # Enable CORS for all routes with specific configuration
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:8080", "http://localhost:8081"],
+        "origins": ["http://localhost:8080", "http://localhost:8081","https://www.lawvriksh.com/"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
@@ -119,10 +119,10 @@ app.json_encoder = CustomJSONEncoder
 
 # MySQL Connection Pool Configuration
 db_config = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'pabbo@123'),  # Default to your current password if env var not set
-    'database': os.getenv('DB_NAME', 'lawfort'),
+    'host': os.getenv('DB_HOST', 'mysql-1c58266a-prabhjotjaswal08-77ed.e.aivencloud.com'),
+    'user': os.getenv('DB_USER', 'avnadmin'),
+    'password': os.getenv('DB_PASSWORD', 'AVNS_IJYG8aEFX5D0ugOuMng'),  # Default to your current password if env var not set
+    'database': os.getenv('DB_NAME', 'defaultdb'),
     'pool_name': 'lawfort_pool',
     'pool_size': int(os.getenv('DB_POOL_SIZE', 30))
 }
