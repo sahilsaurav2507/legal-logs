@@ -15,6 +15,72 @@ from grammar_checker import check_grammar_api
 import PyPDF2
 import io
 from utils.pdf_thumbnail import generate_research_paper_thumbnail
+import logging
+from sentiment_analysis import sentiment_analyzer, analyze_content_sentiment, get_sentiment_weight
+from credit_system import CreditSystem
+
+# Practice Areas Configuration
+PRACTICE_AREAS = [
+    {
+        'value': 'Constitutional Law',
+        'label': 'Constitutional Law',
+        'description': 'Constitutional interpretation, civil rights, and fundamental legal principles'
+    },
+    {
+        'value': 'Corporate Law',
+        'label': 'Corporate Law',
+        'description': 'Business formation, mergers, acquisitions, and corporate governance'
+    },
+    {
+        'value': 'Employment Law',
+        'label': 'Employment Law',
+        'description': 'Workplace rights, labor relations, and employment disputes'
+    },
+    {
+        'value': 'Intellectual Property',
+        'label': 'Intellectual Property',
+        'description': 'Patents, trademarks, copyrights, and trade secrets'
+    },
+    {
+        'value': 'Criminal Law',
+        'label': 'Criminal Law',
+        'description': 'Criminal defense, prosecution, and criminal justice system'
+    },
+    {
+        'value': 'Family Law',
+        'label': 'Family Law',
+        'description': 'Divorce, custody, adoption, and family-related legal matters'
+    },
+    {
+        'value': 'Civil Litigation',
+        'label': 'Civil Litigation',
+        'description': 'Civil disputes, commercial litigation, and dispute resolution'
+    },
+    {
+        'value': 'Real Estate Law',
+        'label': 'Real Estate Law',
+        'description': 'Property transactions, real estate disputes, and property law'
+    },
+    {
+        'value': 'Regulatory Compliance',
+        'label': 'Regulatory Compliance',
+        'description': 'Regulatory advisory, compliance programs, and government relations'
+    },
+    {
+        'value': 'General',
+        'label': 'General Practice',
+        'description': 'General legal practice covering multiple areas of law'
+    },
+    {
+        'value': 'Student',
+        'label': 'Law Student',
+        'description': 'Currently studying law or preparing for legal career'
+    }
+]
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,19 +88,24 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 # Enable CORS for all routes with specific configuration
-# Get allowed origins from environment variable, fallback to localhost for development
-allowed_origins = os.getenv('FRONTEND_URL','https://legal-logs.onrender.com').split(',')
-# Add common development URLs
-allowed_origins.extend(['https://legal-logs.onrender.com'])
-
 CORS(app, resources={
     r"/*": {
-        "origins": allowed_origins,
+        "origins": ["http://localhost:8080", "http://localhost:8081"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
     }
 })
+
+# Add request logging middleware
+@app.before_request
+def log_request_info():
+    logger.info(f'{request.method} {request.url} - {request.remote_addr}')
+
+@app.after_request
+def log_response_info(response):
+    logger.info(f'Response: {response.status_code}')
+    return response
 
 # JSON encoder to handle date objects
 class CustomJSONEncoder(json.JSONEncoder):
@@ -48,18 +119,20 @@ app.json_encoder = CustomJSONEncoder
 
 # MySQL Connection Pool Configuration
 db_config = {
-    'host': os.getenv('DB_HOST', 'mysql-1c58266a-prabhjotjaswal08-77ed.e.aivencloud.com'),
-    'port': int(os.getenv('DB_PORT', 14544)),
-    'user': os.getenv('DB_USER', 'avnadmin'),
-    'password': os.getenv('DB_PASSWORD', 'AVNS_IJYG8aEFX5D0ugOuMng'),  # Default to your current password if env var not set
-    'database': os.getenv('DB_NAME', 'defaultdb'),
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', 'pabbo@123'),  # Default to your current password if env var not set
+    'database': os.getenv('DB_NAME', 'lawfort'),
     'pool_name': 'lawfort_pool',
-    'pool_size': int(os.getenv('DB_POOL_SIZE', 5))
+    'pool_size': int(os.getenv('DB_POOL_SIZE', 30))
 }
 
 # Create connection pool
 connection_pool = pooling.MySQLConnectionPool(**db_config)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'pabbo@123')
+
+# Initialize credit system
+credit_system = CreditSystem(connection_pool)
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = "517818204697-jpimspqvc3f4folciiapr6vbugs9t7hu.apps.googleusercontent.com"
@@ -197,31 +270,6 @@ def log_email_in_db(sender_id, _recipient_emails, _subject, _content, status):
     """
     # TODO: Implement actual email logging to database
     return True
-
-# Health check endpoint for deployment platforms
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint for monitoring and deployment platforms"""
-    try:
-        # Test database connection
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT 1")
-        cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
-        return jsonify({
-            'status': 'healthy',
-            'message': 'Backend is running and database is accessible',
-            'timestamp': datetime.now().isoformat()
-        }), 200
-    except Exception as e:
-        return jsonify({
-            'status': 'unhealthy',
-            'message': f'Database connection failed: {str(e)}',
-            'timestamp': datetime.now().isoformat()
-        }), 503
 
 @app.route('/register', methods=['POST'])
 def register_user():
@@ -1293,6 +1341,93 @@ def validate_session():
         cursor.close()
         conn.close()
 
+@app.route('/user/profile', methods=['PUT'])
+def update_own_profile():
+    session_token = request.headers.get('Authorization')
+    if not session_token:
+        return jsonify({'error': 'Session token required'}), 401
+
+    # Remove 'Bearer ' prefix if present
+    if session_token.startswith('Bearer '):
+        session_token = session_token[7:]
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(buffered=True)
+
+    try:
+        # Get user ID from session
+        cursor.execute("SELECT User_ID FROM Session WHERE Session_Token = %s", (session_token,))
+        session = cursor.fetchone()
+
+        if not session:
+            return jsonify({'error': 'Invalid session'}), 401
+
+        user_id = session[0]
+
+        # Check if user profile exists
+        cursor.execute("SELECT User_ID FROM User_Profile WHERE User_ID = %s", (user_id,))
+        profile_exists = cursor.fetchone()
+
+        # Prepare profile update data
+        profile_fields = []
+        profile_values = []
+
+        # Map frontend field names to database field names
+        field_mapping = {
+            'full_name': 'Full_Name',
+            'phone': 'Phone',
+            'bio': 'Bio',
+            'practice_area': 'Practice_Area',
+            'location': 'Location',
+            'years_of_experience': 'Years_of_Experience',
+            'law_specialization': 'Law_Specialization',
+            'education': 'Education',
+            'bar_exam_status': 'Bar_Exam_Status',
+            'license_number': 'License_Number',
+            'linkedin_profile': 'LinkedIn_Profile',
+            'alumni_of': 'Alumni_of',
+            'professional_organizations': 'Professional_Organizations'
+        }
+
+        # Build update query
+        for frontend_field, db_field in field_mapping.items():
+            if frontend_field in data:
+                profile_fields.append(f'{db_field} = %s')
+                profile_values.append(data[frontend_field])
+
+        # Update email in Users table if provided
+        if 'email' in data and data['email']:
+            cursor.execute("UPDATE Users SET Email = %s WHERE User_ID = %s", (data['email'], user_id))
+
+        # Update profile fields if any
+        if profile_fields:
+            if profile_exists:
+                # Update existing profile
+                profile_values.append(user_id)
+                update_query = f"UPDATE User_Profile SET {', '.join(profile_fields)} WHERE User_ID = %s"
+                cursor.execute(update_query, profile_values)
+            else:
+                # Create new profile if it doesn't exist
+                insert_fields = ['User_ID'] + [field.split(' = ')[0] for field in profile_fields]
+                insert_values = [user_id] + profile_values[:-1]  # Remove the user_id we added for update
+                placeholders = ', '.join(['%s'] * len(insert_values))
+                insert_query = f"INSERT INTO User_Profile ({', '.join(insert_fields)}) VALUES ({placeholders})"
+                cursor.execute(insert_query, insert_values)
+
+        conn.commit()
+        return jsonify({'message': 'Profile updated successfully'}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 @app.route('/api/user/dashboard', methods=['GET'])
 def get_user_dashboard():
     session_token = request.headers.get('Authorization')
@@ -1953,6 +2088,114 @@ class CustomJSONEncoder(json.JSONEncoder):
 # Set the custom JSON encoder for the Flask app
 app.json_encoder = CustomJSONEncoder
 
+# ===== SENTIMENT ANALYSIS HELPER FUNCTIONS =====
+
+def update_content_sentiment_async(content_id: int):
+    """
+    Update sentiment analysis for a content item asynchronously.
+    This function analyzes comments and updates the Content_Metrics table.
+    """
+    try:
+        connection = get_db_connection()
+        if not connection:
+            logger.error("Failed to get database connection for sentiment analysis")
+            return
+
+        # Analyze sentiment for the content
+        sentiment_data = sentiment_analyzer.analyze_blog_post_sentiment(content_id, connection)
+
+        # Update Content_Metrics table with sentiment data
+        cursor = connection.cursor()
+        cursor.execute("""
+            UPDATE Content_Metrics
+            SET
+                Sentiment_Score = %s,
+                Positive_Ratio = %s,
+                Negative_Ratio = %s,
+                Neutral_Ratio = %s,
+                Sentiment_Confidence = %s,
+                Overall_Sentiment = %s,
+                Sentiment_Last_Updated = NOW(),
+                Sentiment_Comment_Count = %s
+            WHERE Content_ID = %s
+        """, (
+            sentiment_data.get('sentiment_score', 0.0),
+            sentiment_data.get('positive_ratio', 0.0),
+            sentiment_data.get('negative_ratio', 0.0),
+            sentiment_data.get('neutral_ratio', 1.0),
+            sentiment_data.get('confidence', 0.0),
+            sentiment_data.get('overall_sentiment', 'neutral'),
+            sentiment_data.get('comment_count', 0),
+            content_id
+        ))
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+        logger.info(f"Updated sentiment for content {content_id}: {sentiment_data.get('overall_sentiment', 'neutral')} (score: {sentiment_data.get('sentiment_score', 0.0)})")
+
+    except Exception as e:
+        logger.error(f"Error updating sentiment for content {content_id}: {str(e)}")
+
+def should_update_sentiment(content_id: int) -> bool:
+    """
+    Check if sentiment analysis should be updated for a content item.
+    Returns True if sentiment is stale or has never been analyzed.
+    """
+    try:
+        connection = get_db_connection()
+        if not connection:
+            return False
+
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT
+                Sentiment_Last_Updated,
+                Sentiment_Comment_Count,
+                (SELECT COUNT(*) FROM Content_Comments WHERE Content_ID = %s AND Status = 'Active') as current_comment_count
+            FROM Content_Metrics
+            WHERE Content_ID = %s
+        """, (content_id, content_id))
+
+        result = cursor.fetchone()
+        cursor.close()
+        connection.close()
+
+        if not result:
+            return True  # No metrics record, should analyze
+
+        # Check if sentiment was never analyzed
+        if result['Sentiment_Last_Updated'] is None:
+            return True
+
+        # Check if comment count has changed
+        if result['current_comment_count'] != result['Sentiment_Comment_Count']:
+            return True
+
+        # Check if sentiment is older than 24 hours
+        if result['Sentiment_Last_Updated']:
+            time_diff = datetime.now() - result['Sentiment_Last_Updated']
+            if time_diff.total_seconds() > 86400:  # 24 hours
+                return True
+
+        return False
+
+    except Exception as e:
+        logger.error(f"Error checking sentiment update status for content {content_id}: {str(e)}")
+        return False
+
+def get_enhanced_engagement_score(content_id: int, base_engagement: int) -> float:
+    """
+    Calculate enhanced engagement score with sentiment weighting.
+    """
+    try:
+        sentiment_weight = get_sentiment_weight(content_id)
+        return base_engagement * sentiment_weight
+    except Exception as e:
+        logger.warning(f"Error calculating sentiment weight for content {content_id}: {str(e)}")
+        return float(base_engagement)  # Return base score on error
+
 # ===== BLOG POST ROUTES =====
 
 @app.route('/api/blog-posts', methods=['GET'])
@@ -1964,10 +2207,12 @@ def get_blog_posts():
         # Get query parameters for filtering
         category = request.args.get('category')
         status = request.args.get('status', 'Active')
+        sort_by = request.args.get('sort_by', 'recent')  # recent, popular, engagement
+        practice_area = request.args.get('practice_area')  # For recommendations
         limit = request.args.get('limit', 10, type=int)
         offset = request.args.get('offset', 0, type=int)
 
-        # Base query - Fixed field names to match frontend expectations
+        # Base query - Enhanced with sentiment analysis for recommendations
         query = """
             SELECT c.Content_ID as content_id, c.User_ID as user_id, c.Title as title,
                    c.Summary as summary, c.Content as content,
@@ -1976,11 +2221,20 @@ def get_blog_posts():
                    c.Is_Featured as is_featured, bp.Category as category,
                    bp.Allow_Comments as allow_comments, bp.Is_Published as is_published,
                    bp.Publication_Date as publication_date, up.Full_Name as author_name,
-                   (SELECT COUNT(*) FROM Content_Comments cc WHERE cc.Content_ID = c.Content_ID AND cc.Status = 'Active') as comment_count
+                   (SELECT COUNT(*) FROM Content_Comments cc WHERE cc.Content_ID = c.Content_ID AND cc.Status = 'Active') as comment_count,
+                   COALESCE(cm.Views, 0) as views,
+                   COALESCE(cm.Likes, 0) as likes,
+                   COALESCE(cm.Shares, 0) as shares,
+                   COALESCE(cm.Sentiment_Score, 0.0) as sentiment_score,
+                   COALESCE(cm.Sentiment_Confidence, 0.0) as sentiment_confidence,
+                   COALESCE(cm.Overall_Sentiment, 'neutral') as overall_sentiment,
+                   cm.Sentiment_Last_Updated as sentiment_last_updated,
+                   (COALESCE(cm.Likes, 0) + COALESCE(cm.Comments_Count, 0)) as base_engagement_score
             FROM Content c
             JOIN Blog_Posts bp ON c.Content_ID = bp.Content_ID
             JOIN Users u ON c.User_ID = u.User_ID
             JOIN User_Profile up ON u.User_ID = up.User_ID
+            LEFT JOIN Content_Metrics cm ON c.Content_ID = cm.Content_ID
             WHERE c.Content_Type = 'Blog_Post' AND bp.Is_Published = TRUE
         """
 
@@ -1995,8 +2249,27 @@ def get_blog_posts():
             query += " AND c.Status = %s"
             params.append(status)
 
-        # Add sorting and pagination
-        query += " ORDER BY c.Created_At DESC LIMIT %s OFFSET %s"
+        # Add practice area filtering for recommendations
+        if practice_area:
+            query += " AND (bp.Category LIKE %s OR c.Title LIKE %s OR c.Summary LIKE %s)"
+            practice_area_param = f"%{practice_area}%"
+            params.extend([practice_area_param, practice_area_param, practice_area_param])
+
+        # Add sorting with sentiment-enhanced engagement
+        if sort_by == 'popular':
+            query += " ORDER BY COALESCE(cm.Views, 0) DESC, c.Created_At DESC"
+        elif sort_by == 'engagement':
+            # Enhanced engagement scoring with sentiment weighting
+            # Base engagement + sentiment boost/penalty
+            query += """ ORDER BY (
+                (COALESCE(cm.Likes, 0) + COALESCE(cm.Comments_Count, 0)) *
+                (1.0 + (COALESCE(cm.Sentiment_Score, 0.0) * COALESCE(cm.Sentiment_Confidence, 0.0) * 0.5))
+            ) DESC, c.Created_At DESC"""
+        else:  # recent
+            query += " ORDER BY c.Created_At DESC"
+
+        # Add pagination
+        query += " LIMIT %s OFFSET %s"
         params.extend([limit, offset])
 
         cursor.execute(query, params)
@@ -2019,6 +2292,12 @@ def get_blog_posts():
         if status:
             count_query += " AND c.Status = %s"
             count_params.append(status)
+
+        # Add practice area filtering for count query too
+        if practice_area:
+            count_query += " AND (bp.Category LIKE %s OR c.Title LIKE %s OR c.Summary LIKE %s)"
+            practice_area_param = f"%{practice_area}%"
+            count_params.extend([practice_area_param, practice_area_param, practice_area_param])
 
         cursor.execute(count_query, count_params)
         total_count = cursor.fetchone()['total']
@@ -2124,6 +2403,24 @@ def create_blog_post(user_id):
             connection.close()
             return jsonify({"success": False, "message": "User does not have permission to create blog posts"}), 403
 
+        # Check for duplicate titles by the same user to prevent accidental duplicates
+        title = data.get('title', '').strip()
+        cursor.execute("""
+            SELECT Content_ID FROM Content
+            WHERE User_ID = %s AND Title = %s AND Content_Type = 'Blog_Post'
+            AND Status != 'Deleted'
+        """, (user_id, title))
+
+        existing_post = cursor.fetchone()
+        if existing_post:
+            cursor.close()
+            connection.close()
+            return jsonify({
+                "success": False,
+                "message": "A blog post with this title already exists. Please use a different title.",
+                "existing_content_id": existing_post['Content_ID']
+            }), 409
+
         # Insert directly into database instead of using stored procedure
         try:
             # For admins and editors, default to published unless explicitly set to false
@@ -2136,7 +2433,7 @@ def create_blog_post(user_id):
                 VALUES (%s, 'Blog_Post', %s, %s, %s, %s, %s, %s)
             """, (
                 user_id,
-                data.get('title'),
+                title,
                 data.get('summary', ''),
                 data.get('content'),
                 data.get('featured_image', ''),
@@ -2439,6 +2736,8 @@ def like_content(user_id, content_id):
 
         existing_like = cursor.fetchone()
 
+        credit_result = None
+
         if existing_like:
             # User has already liked, so unlike it
             cursor.execute("""
@@ -2448,6 +2747,10 @@ def like_content(user_id, content_id):
 
             action = "unliked"
             is_liked = False
+
+            # Deduct credit from content creator
+            credit_result = credit_system.deduct_like_credit(content_id, user_id)
+
         else:
             # User hasn't liked, so like it
             cursor.execute("""
@@ -2457,6 +2760,9 @@ def like_content(user_id, content_id):
 
             action = "liked"
             is_liked = True
+
+            # Award credit to content creator
+            credit_result = credit_system.award_like_credit(content_id, user_id)
 
         connection.commit()
 
@@ -2469,24 +2775,31 @@ def like_content(user_id, content_id):
         result = cursor.fetchone()
         like_count = result['like_count'] if result else 0
 
-        # Update Content_Metrics table
-        cursor.execute("""
-            INSERT INTO Content_Metrics (Content_ID, Views, Likes, Shares, Comments_Count)
-            VALUES (%s, 0, %s, 0, 0)
-            ON DUPLICATE KEY UPDATE
-            Likes = %s, Last_Updated = NOW()
-        """, (content_id, like_count, like_count))
+        # Note: Content_Metrics is automatically updated by database trigger
+        # No need to manually update it here to avoid conflicts
 
         cursor.close()
         connection.close()
 
-        return jsonify({
+        # Prepare response with credit information
+        response_data = {
             "success": True,
             "action": action,
             "is_liked": is_liked,
             "like_count": like_count,
             "message": f"Content {action} successfully"
-        })
+        }
+
+        # Add credit information if available
+        if credit_result:
+            response_data["credit_info"] = {
+                "credit_processed": credit_result.get('success', False),
+                "credit_message": credit_result.get('message', ''),
+                "credit_amount": credit_result.get('credit_awarded', credit_result.get('credit_deducted', 0)),
+                "new_balance": credit_result.get('new_balance')
+            }
+
+        return jsonify(response_data)
 
     except Exception as e:
         if connection:
@@ -2526,6 +2839,83 @@ def get_like_status(user_id, content_id):
             "is_liked": is_liked,
             "like_count": like_count
         })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# Credit System API Endpoints
+
+@app.route('/api/credits/balance', methods=['GET'])
+@require_permission('content_read_public')
+def get_credit_balance(user_id):
+    """Get current credit balance for the authenticated user"""
+    try:
+        result = credit_system.get_user_credit_balance(user_id)
+
+        if result['success']:
+            return jsonify({
+                "success": True,
+                "balance": result['balance'],
+                "last_updated": result['last_updated']
+            })
+        else:
+            return jsonify({"success": False, "message": result['message']}), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/credits/transactions', methods=['GET'])
+@require_permission('content_read_public')
+def get_credit_transactions(user_id):
+    """Get credit transaction history for the authenticated user"""
+    try:
+        # Get query parameters
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+
+        # Validate parameters
+        if limit > 100:
+            limit = 100  # Maximum limit
+        if offset < 0:
+            offset = 0
+
+        result = credit_system.get_user_transaction_history(user_id, limit, offset)
+
+        if result['success']:
+            return jsonify({
+                "success": True,
+                "transactions": result['transactions'],
+                "total_count": result['total_count'],
+                "limit": result['limit'],
+                "offset": result['offset']
+            })
+        else:
+            return jsonify({"success": False, "message": result['message']}), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/credits/statistics', methods=['GET'])
+@require_permission('content_read_public')
+def get_credit_statistics(user_id):
+    """Get credit statistics for the authenticated user"""
+    try:
+        result = credit_system.get_credit_statistics(user_id)
+
+        if result['success']:
+            return jsonify({
+                "success": True,
+                "statistics": {
+                    "current_balance": result['current_balance'],
+                    "total_earned": result['total_earned'],
+                    "total_spent": result['total_spent'],
+                    "total_transactions": result['total_transactions'],
+                    "likes_received": result['likes_received'],
+                    "likes_removed": result['likes_removed']
+                }
+            })
+        else:
+            return jsonify({"success": False, "message": result['message']}), 500
 
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
@@ -2619,6 +3009,12 @@ def add_content_comment(user_id, content_id):
             cursor.close()
             connection.close()
 
+            # Trigger sentiment analysis update in background
+            try:
+                update_content_sentiment_async(content_id)
+            except Exception as sentiment_error:
+                logger.warning(f"Failed to update sentiment for content {content_id}: {sentiment_error}")
+
             return jsonify({
                 "success": True,
                 "message": "Comment added successfully",
@@ -2631,6 +3027,153 @@ def add_content_comment(user_id, content_id):
             connection.close()
             print(f"Database error: {db_error}")
             return jsonify({"success": False, "message": f"Database error: {str(db_error)}"}), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ===== SENTIMENT ANALYSIS ROUTES =====
+
+@app.route('/api/content/<int:content_id>/sentiment', methods=['GET'])
+@require_permission('content_read_public')
+def get_content_sentiment(user_id, content_id):
+    """Get sentiment analysis for a specific content item."""
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Get current sentiment data from database
+        cursor.execute("""
+            SELECT
+                Sentiment_Score,
+                Positive_Ratio,
+                Negative_Ratio,
+                Neutral_Ratio,
+                Sentiment_Confidence,
+                Overall_Sentiment,
+                Sentiment_Last_Updated,
+                Sentiment_Comment_Count
+            FROM Content_Metrics
+            WHERE Content_ID = %s
+        """, (content_id,))
+
+        sentiment_data = cursor.fetchone()
+        cursor.close()
+        connection.close()
+
+        if not sentiment_data:
+            return jsonify({
+                "success": False,
+                "message": "Content not found or no metrics available"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "sentiment_data": {
+                "sentiment_score": float(sentiment_data['Sentiment_Score'] or 0.0),
+                "positive_ratio": float(sentiment_data['Positive_Ratio'] or 0.0),
+                "negative_ratio": float(sentiment_data['Negative_Ratio'] or 0.0),
+                "neutral_ratio": float(sentiment_data['Neutral_Ratio'] or 1.0),
+                "confidence": float(sentiment_data['Sentiment_Confidence'] or 0.0),
+                "overall_sentiment": sentiment_data['Overall_Sentiment'] or 'neutral',
+                "last_updated": sentiment_data['Sentiment_Last_Updated'].isoformat() if sentiment_data['Sentiment_Last_Updated'] else None,
+                "comment_count": sentiment_data['Sentiment_Comment_Count'] or 0
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/content/<int:content_id>/sentiment/update', methods=['POST'])
+@require_permission('content_read_public')
+def update_content_sentiment(user_id, content_id):
+    """Manually trigger sentiment analysis update for a content item."""
+    try:
+        # Check if content exists
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT Content_Type, Status
+            FROM Content
+            WHERE Content_ID = %s
+        """, (content_id,))
+
+        content = cursor.fetchone()
+        cursor.close()
+        connection.close()
+
+        if not content:
+            return jsonify({
+                "success": False,
+                "message": "Content not found"
+            }), 404
+
+        if content['Status'] not in ['Active', 'Restricted']:
+            return jsonify({
+                "success": False,
+                "message": "Cannot analyze sentiment for inactive content"
+            }), 400
+
+        # Trigger sentiment analysis
+        update_content_sentiment_async(content_id)
+
+        return jsonify({
+            "success": True,
+            "message": "Sentiment analysis update triggered successfully"
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/admin/sentiment/batch-update', methods=['POST'])
+@require_permission('admin_access')
+def batch_update_sentiment(user_id):
+    """Batch update sentiment analysis for all blog posts (admin only)."""
+    try:
+        data = request.json or {}
+        limit = data.get('limit', 50)  # Process up to 50 posts at a time
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Get blog posts that need sentiment analysis
+        cursor.execute("""
+            SELECT c.Content_ID
+            FROM Content c
+            JOIN Blog_Posts bp ON c.Content_ID = bp.Content_ID
+            LEFT JOIN Content_Metrics cm ON c.Content_ID = cm.Content_ID
+            WHERE c.Content_Type = 'Blog_Post'
+            AND c.Status = 'Active'
+            AND bp.Is_Published = TRUE
+            AND (cm.Sentiment_Last_Updated IS NULL
+                 OR cm.Sentiment_Last_Updated < DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                 OR cm.Sentiment_Comment_Count != (
+                     SELECT COUNT(*) FROM Content_Comments cc
+                     WHERE cc.Content_ID = c.Content_ID AND cc.Status = 'Active'
+                 ))
+            ORDER BY c.Created_At DESC
+            LIMIT %s
+        """, (limit,))
+
+        content_ids = [row['Content_ID'] for row in cursor.fetchall()]
+        cursor.close()
+        connection.close()
+
+        # Update sentiment for each content item
+        updated_count = 0
+        for content_id in content_ids:
+            try:
+                update_content_sentiment_async(content_id)
+                updated_count += 1
+            except Exception as e:
+                logger.error(f"Failed to update sentiment for content {content_id}: {str(e)}")
+
+        return jsonify({
+            "success": True,
+            "message": f"Sentiment analysis updated for {updated_count} out of {len(content_ids)} blog posts",
+            "updated_count": updated_count,
+            "total_found": len(content_ids)
+        })
+
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
@@ -6231,7 +6774,7 @@ def update_internship_application_status(user_id, application_id):
 # Health check endpoint
 @app.route('/', methods=['GET'])
 @app.route('/health', methods=['GET'])
-def health_check_root():
+def health_check():
     try:
         # Test database connection
         connection = get_db_connection()
@@ -7339,9 +7882,169 @@ def grammar_checker_health():
 
 
 
+# Get contributor statistics for profile page
+@app.route('/api/contributor/stats', methods=['GET'])
+@require_permission('content_read_own')
+def get_contributor_stats(user_id):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Get user role to determine access level
+        cursor.execute("SELECT Role_ID FROM Users WHERE User_ID = %s", (user_id,))
+        user_role_result = cursor.fetchone()
+
+        if not user_role_result:
+            return jsonify({'error': 'User not found'}), 404
+
+        user_role = user_role_result['Role_ID']
+
+        # Only allow editors and admins to access contributor stats
+        if user_role not in [1, 2]:  # 1 = Admin, 2 = Editor
+            return jsonify({'error': 'Access denied. Only editors and admins can view contributor statistics.'}), 403
+
+        # Get user join date and last activity
+        cursor.execute("""
+            SELECT
+                Created_At as join_date,
+                Updated_At as last_active
+            FROM Users
+            WHERE User_ID = %s
+        """, (user_id,))
+        user_info = cursor.fetchone()
+
+        # Get blog posts count
+        cursor.execute("""
+            SELECT COUNT(*) as total_blog_posts
+            FROM Content c
+            JOIN Blog_Posts bp ON c.Content_ID = bp.Content_ID
+            WHERE c.User_ID = %s AND c.Status != 'Deleted'
+        """, (user_id,))
+        blog_stats = cursor.fetchone()
+
+        # Get notes count
+        cursor.execute("""
+            SELECT COUNT(*) as total_notes
+            FROM Content c
+            JOIN Notes n ON c.Content_ID = n.Content_ID
+            WHERE c.User_ID = %s AND c.Status != 'Deleted'
+        """, (user_id,))
+        notes_stats = cursor.fetchone()
+
+        # Get published content count
+        cursor.execute("""
+            SELECT COUNT(*) as published_content
+            FROM Content c
+            WHERE c.User_ID = %s AND c.Status = 'Active'
+        """, (user_id,))
+        published_stats = cursor.fetchone()
+
+        # Get featured content count
+        cursor.execute("""
+            SELECT COUNT(*) as featured_content
+            FROM Content c
+            WHERE c.User_ID = %s AND c.Is_Featured = TRUE AND c.Status = 'Active'
+        """, (user_id,))
+        featured_stats = cursor.fetchone()
+
+        # Get total engagement metrics
+        cursor.execute("""
+            SELECT
+                COALESCE(SUM(cm.Views), 0) as total_views,
+                COALESCE(SUM(cm.Likes), 0) as total_likes,
+                COALESCE(SUM(cm.Shares), 0) as total_shares,
+                COALESCE(SUM(cm.Comments_Count), 0) as total_comments
+            FROM Content c
+            LEFT JOIN Content_Metrics cm ON c.Content_ID = cm.Content_ID
+            WHERE c.User_ID = %s AND c.Status != 'Deleted'
+        """, (user_id,))
+        engagement_stats = cursor.fetchone()
+
+        # Prepare response data
+        contributor_stats = {
+            'totalBlogPosts': blog_stats['total_blog_posts'] or 0,
+            'totalNotes': notes_stats['total_notes'] or 0,
+            'totalViews': engagement_stats['total_views'] or 0,
+            'totalLikes': engagement_stats['total_likes'] or 0,
+            'totalShares': engagement_stats['total_shares'] or 0,
+            'totalComments': engagement_stats['total_comments'] or 0,
+            'joinDate': user_info['join_date'].isoformat() if user_info['join_date'] else None,
+            'lastActive': user_info['last_active'].isoformat() if user_info['last_active'] else None,
+            'featuredContent': featured_stats['featured_content'] or 0,
+            'publishedContent': published_stats['published_content'] or 0
+        }
+
+        cursor.close()
+        connection.close()
+
+        return jsonify({
+            'success': True,
+            'stats': contributor_stats
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== PRACTICE AREAS ROUTES =====
+
+@app.route('/api/practice-areas', methods=['GET'])
+def get_practice_areas():
+    """Get available practice areas for user registration and profile updates."""
+    try:
+        return jsonify({
+            'success': True,
+            'practice_areas': PRACTICE_AREAS
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/practice-areas/categories', methods=['GET'])
+def get_practice_area_categories():
+    """Get practice area categories that have existing blog content."""
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        # Get categories that have active blog posts
+        cursor.execute("""
+            SELECT DISTINCT bp.Category as category, COUNT(*) as post_count
+            FROM Blog_Posts bp
+            JOIN Content c ON bp.Content_ID = c.Content_ID
+            WHERE c.Status = 'Active' AND bp.Is_Published = TRUE
+            GROUP BY bp.Category
+            ORDER BY post_count DESC, bp.Category ASC
+        """)
+
+        categories_with_content = cursor.fetchall()
+        cursor.close()
+        connection.close()
+
+        # Combine with predefined practice areas
+        available_categories = []
+        category_names = [cat['category'] for cat in categories_with_content]
+
+        # Add practice areas that have content
+        for practice_area in PRACTICE_AREAS:
+            post_count = 0
+            for cat in categories_with_content:
+                if cat['category'] == practice_area['value']:
+                    post_count = cat['post_count']
+                    break
+
+            available_categories.append({
+                **practice_area,
+                'post_count': post_count,
+                'has_content': post_count > 0
+            })
+
+        return jsonify({
+            'success': True,
+            'categories': available_categories,
+            'total_categories': len(available_categories)
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
-    # Get configuration from environment variables
-    debug_mode = os.getenv('FLASK_ENV', 'production') == 'development'
-    port = int(os.getenv('PORT', 5000))
-    
-    app.run(debug=debug_mode, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=5000)
