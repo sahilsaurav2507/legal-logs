@@ -90,7 +90,7 @@ app = Flask(__name__)
 # Enable CORS for all routes with specific configuration
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:8080", "http://localhost:8081","https://www.lawvriksh.com/"],
+        "origins": ["http://localhost:8080", "http://localhost:8081","https://www.lawvriksh.com"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
@@ -120,15 +120,36 @@ app.json_encoder = CustomJSONEncoder
 # MySQL Connection Pool Configuration
 db_config = {
     'host': os.getenv('DB_HOST', 'mysql-1c58266a-prabhjotjaswal08-77ed.e.aivencloud.com'),
+    'port': int(os.getenv('DB_PORT', 14544)),
     'user': os.getenv('DB_USER', 'avnadmin'),
     'password': os.getenv('DB_PASSWORD', 'AVNS_IJYG8aEFX5D0ugOuMng'),  # Default to your current password if env var not set
     'database': os.getenv('DB_NAME', 'defaultdb'),
     'pool_name': 'lawfort_pool',
-    'pool_size': int(os.getenv('DB_POOL_SIZE', 30))
+    'pool_size': int(os.getenv('DB_POOL_SIZE', 30)),
+    'autocommit': False,
+    'use_unicode': True,
+    'charset': 'utf8mb4',
+    'connect_timeout': 60,
+    'sql_mode': 'TRADITIONAL'
 }
 
-# Create connection pool
-connection_pool = pooling.MySQLConnectionPool(**db_config)
+# Add SSL configuration for production/cloud databases (Aiven requires SSL)
+if os.getenv('DB_HOST') != 'localhost' and os.getenv('DB_HOST'):
+    db_config['ssl_disabled'] = False
+    db_config['ssl_verify_cert'] = False  # Disable cert verification for Aiven
+    db_config['ssl_verify_identity'] = False
+
+# Log database configuration for debugging (without password)
+logger.info(f"Database configuration: host={db_config['host']}, port={db_config['port']}, user={db_config['user']}, database={db_config['database']}")
+
+# Create connection pool with error handling
+try:
+    connection_pool = pooling.MySQLConnectionPool(**db_config)
+    logger.info("Database connection pool created successfully")
+except Exception as e:
+    logger.error(f"Failed to create database connection pool: {str(e)}")
+    logger.error(f"Database config used: {dict((k, v) for k, v in db_config.items() if k != 'password')}")
+    raise
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'pabbo@123')
 
 # Initialize credit system
@@ -6795,6 +6816,23 @@ def health_check():
             "message": "Database connection failed",
             "error": str(e)
         }), 500
+
+# Debug endpoint to check environment variables
+@app.route('/debug/env', methods=['GET'])
+def debug_env():
+    """Debug endpoint to check database environment variables"""
+    env_vars = {
+        'DB_HOST': os.getenv('DB_HOST', 'NOT_SET'),
+        'DB_PORT': os.getenv('DB_PORT', 'NOT_SET'),
+        'DB_USER': os.getenv('DB_USER', 'NOT_SET'),
+        'DB_NAME': os.getenv('DB_NAME', 'NOT_SET'),
+        'FLASK_ENV': os.getenv('FLASK_ENV', 'NOT_SET'),
+        'PORT': os.getenv('PORT', 'NOT_SET')
+    }
+    return jsonify({
+        "environment_variables": env_vars,
+        "note": "This endpoint should be removed in production"
+    }), 200
 
 # CORS headers are handled by Flask-CORS configuration above
 
