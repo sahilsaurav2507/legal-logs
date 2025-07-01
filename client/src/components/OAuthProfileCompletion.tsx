@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import PracticeAreaSelect from '@/components/PracticeAreaSelect';
 
 // Define form schema for required fields
 const formSchema = z.object({
@@ -131,7 +132,12 @@ const OAuthProfileCompletion: React.FC<OAuthProfileCompletionProps> = ({
                     <FormItem>
                       <FormLabel>Practice Area *</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Corporate Law, Criminal Defense, Family Law" {...field} />
+                        <PracticeAreaSelect
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Select your practice area"
+                          showContentStats={true}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

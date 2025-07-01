@@ -20,7 +20,6 @@ import { contentApi } from '@/services/api';
 import NoteTypeSelection from '@/components/notes/NoteTypeSelection';
 import PDFUploadComponent from '@/components/notes/PDFUploadComponent';
 import { NoteTextEditorWrapper } from '@/components/notes/NoteTextEditor';
-import { API_BASE_URL } from '@/services/api';
 
 const CreateEditNote = () => {
   const { id } = useParams();
@@ -120,7 +119,7 @@ const CreateEditNote = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/notes/upload-pdf`, {
+      const response = await fetch('http://localhost:5000/api/notes/upload-pdf', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('session_token')}`,

@@ -352,10 +352,10 @@ const ApplicationManagement = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Application Management</h2>
-          <p className="text-gray-600">Manage job, internship, and research paper applications</p>
+          <h2 className="text-2xl font-bold text-lawvriksh-navy legal-heading">Application Management</h2>
+          <p className="text-lawvriksh-gray legal-text">Manage job, internship, and research paper applications</p>
         </div>
-        <Button onClick={exportApplications} variant="outline">
+        <Button onClick={exportApplications} variant="outline" className="border-lawvriksh-navy text-lawvriksh-navy hover:bg-lawvriksh-navy hover:text-white">
           <Download className="h-4 w-4 mr-2" />
           Export CSV
         </Button>

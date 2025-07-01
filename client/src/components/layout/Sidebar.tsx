@@ -18,6 +18,8 @@ import {
   PenTool,
   UserCheck,
   Bookmark,
+  Award,
+  Sparkles,
 } from 'lucide-react';
 import { getEnabledNavigationItems } from '@/config/features';
 
@@ -126,6 +128,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       icon: Settings,
       roles: [UserRole.USER, UserRole.EDITOR, UserRole.ADMIN],
     }] : []),
+
+    // Digital Portfolio - Only for Editors and Admins
+    {
+      name: 'Digital Portfolio',
+      href: '/digital-portfolio',
+      icon: Sparkles,
+      roles: [UserRole.EDITOR, UserRole.ADMIN],
+    },
+
+    // Resume Builder - Only for Editors and Admins
+    {
+      name: 'Resume Builder',
+      href: '/resume-builder',
+      icon: FileText,
+      roles: [UserRole.EDITOR, UserRole.ADMIN],
+    },
   ];
 
   const filteredNavigation = navigation.filter(item =>
@@ -139,10 +157,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="sidebar-container flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-300 px-6 pb-4 shadow-xl">
           <div className="flex h-16 shrink-0 items-center">
             <Link to="/" className="flex items-center space-x-3 professional-hover-lift">
-              <div className="h-10 w-10 bg-gradient-to-br from-black to-gray-800 rounded-xl flex items-center justify-center shadow-lg border border-gray-300">
-                <span className="text-white font-bold text-lg">LF</span>
-              </div>
-              <span className="text-xl font-bold text-black legal-heading">LawFort</span>
+              <img
+                src="/LawVriksh.png"
+                alt="LawVriksh"
+                className="h-10 w-auto"
+              />
             </Link>
           </div>
           <nav className="flex flex-1 flex-col">
@@ -192,10 +211,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="sidebar-container flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-300 px-6 pb-4 shadow-xl">
           <div className="flex h-16 shrink-0 items-center justify-between">
             <Link to="/" className="flex items-center space-x-3 professional-hover-lift" onClick={onClose}>
-              <div className="h-10 w-10 bg-gradient-to-br from-black to-gray-800 rounded-xl flex items-center justify-center shadow-lg border border-gray-300">
-                <span className="text-white font-bold text-lg">LF</span>
-              </div>
-              <span className="text-xl font-bold text-black legal-heading">LawFort</span>
+              <img
+                src="/LawVriksh.png"
+                alt="LawVriksh"
+                className="h-10 w-auto"
+              />
             </Link>
             <button
               onClick={onClose}

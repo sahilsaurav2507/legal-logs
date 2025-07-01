@@ -90,7 +90,25 @@ export default {
 					gray: 'hsl(var(--legal-gray))',
 					'gray-light': 'hsl(var(--legal-gray-light))',
 					'gray-dark': 'hsl(var(--legal-gray-dark))',
+				},
+				lawvriksh: {
+					navy: 'hsl(var(--lawvriksh-navy))',
+					'navy-dark': 'hsl(var(--lawvriksh-navy-dark))',
+					'navy-light': 'hsl(var(--lawvriksh-navy-light))',
+					burgundy: 'hsl(var(--lawvriksh-burgundy))',
+					'burgundy-dark': 'hsl(var(--lawvriksh-burgundy-dark))',
+					'burgundy-light': 'hsl(var(--lawvriksh-burgundy-light))',
+					gold: 'hsl(var(--lawvriksh-gold))',
+					'gold-light': 'hsl(var(--lawvriksh-gold-light))',
+					'gold-dark': 'hsl(var(--lawvriksh-gold-dark))',
+					gray: 'hsl(var(--lawvriksh-gray))',
+					'gray-light': 'hsl(var(--lawvriksh-gray-light))',
+					'gray-dark': 'hsl(var(--lawvriksh-gray-dark))',
 				}
+			},
+			fontFamily: {
+				'legal-heading': ['EB Garamond', 'Georgia', 'Times New Roman', 'serif'],
+				'legal-text': ['Open Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

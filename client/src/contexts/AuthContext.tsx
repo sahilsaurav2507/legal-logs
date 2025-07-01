@@ -27,7 +27,7 @@ export interface User {
   id: string;
   email: string;
   fullName: string;
-  phoneNumber?: string;
+  phone?: string;
   bio: string;
   practiceArea: string;
   organization: string; // This will be mapped from alumni_of or professional_organizations
@@ -40,9 +40,9 @@ export interface User {
   licenseNumber?: string;
   location?: string;
   yearsOfExperience?: number;
-  linkedinUrl?: string;
-  alumniInformation?: string;
-  professionalMemberships?: string;
+  linkedinProfile?: string;
+  alumniOf?: string;
+  professionalOrganizations?: string;
   status?: string;
 }
 
@@ -107,6 +107,7 @@ interface AuthContextType {
   completeOAuthProfile: (userData: any) => Promise<boolean>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
   requestEditorAccess: () => Promise<boolean>;
   hasPermission: (permission: Permission, contentOwnerId?: string) => boolean;
   canCreateContent: () => boolean;
@@ -124,7 +125,7 @@ const mapBackendUserToFrontend = (backendUser: any): User => {
     id: backendUser.id,
     email: backendUser.email,
     fullName: backendUser.full_name,
-    phoneNumber: backendUser.phone,
+    phone: backendUser.phone,
     bio: backendUser.bio,
     practiceArea: backendUser.practice_area,
     organization: backendUser.alumni_of || backendUser.professional_organizations || 'Not specified',
@@ -137,9 +138,9 @@ const mapBackendUserToFrontend = (backendUser: any): User => {
     licenseNumber: backendUser.license_number,
     location: backendUser.location,
     yearsOfExperience: backendUser.years_of_experience,
-    linkedinUrl: backendUser.linkedin_profile,
-    alumniInformation: backendUser.alumni_of,
-    professionalMemberships: backendUser.professional_organizations,
+    linkedinProfile: backendUser.linkedin_profile,
+    alumniOf: backendUser.alumni_of,
+    professionalOrganizations: backendUser.professional_organizations,
     status: backendUser.status,
   };
 };
@@ -269,6 +270,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
+    }
+  };
+
+  // Refresh user function (fetch fresh data from server)
+  const refreshUser = async (): Promise<void> => {
+    if (!isAuthenticated) return;
+
+    try {
+      const userProfile = await userApi.getProfile();
+      const mappedUser = mapBackendUserToFrontend(userProfile.user);
+      setUser(mappedUser);
+    } catch (error) {
+      console.error('Error refreshing user profile:', error);
     }
   };
 
@@ -436,6 +450,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         completeOAuthProfile,
         logout,
         updateUser,
+        refreshUser,
         requestEditorAccess,
         hasPermission,
         canCreateContent,

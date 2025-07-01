@@ -1,8 +1,5 @@
 // API service for backend communication
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-
-// Export API_BASE_URL for use in other files
-export { API_BASE_URL };
+const API_BASE_URL = 'http://localhost:5000';
 
 // Types for API responses
 export interface LoginResponse {
@@ -134,6 +131,45 @@ export interface EditorAnalytics {
     daily_likes: number;
     daily_comments: number;
   }>;
+}
+
+// Credit System Types
+export interface CreditBalance {
+  success: boolean;
+  balance: number;
+  last_updated: string;
+}
+
+export interface CreditTransaction {
+  Transaction_ID: number;
+  Amount: number;
+  Transaction_Type: 'LIKE_RECEIVED' | 'LIKE_REMOVED' | 'AD_REVENUE' | 'ENGAGEMENT_BONUS' | 'MANUAL_ADJUSTMENT';
+  Description: string;
+  Created_At: string;
+  Related_Content_ID?: number;
+  Related_User_ID?: number;
+  content_title?: string;
+  related_user_name?: string;
+}
+
+export interface CreditTransactionHistory {
+  success: boolean;
+  transactions: CreditTransaction[];
+  total_count: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CreditStatistics {
+  success: boolean;
+  statistics: {
+    current_balance: number;
+    total_earned: number;
+    total_spent: number;
+    total_transactions: number;
+    likes_received: number;
+    likes_removed: number;
+  };
 }
 
 export interface AdminAnalytics {
@@ -378,6 +414,25 @@ export const authApi = {
 export const userApi = {
   getProfile: async (): Promise<UserProfileResponse> => {
     return apiClient.get<UserProfileResponse>('/user/profile');
+  },
+
+  updateProfile: async (profileData: {
+    full_name?: string;
+    email?: string;
+    phone?: string;
+    bio?: string;
+    practice_area?: string;
+    location?: string;
+    years_of_experience?: number;
+    law_specialization?: string;
+    education?: string;
+    bar_exam_status?: string;
+    license_number?: string;
+    linkedin_profile?: string;
+    alumni_of?: string;
+    professional_organizations?: string;
+  }): Promise<{ message: string }> => {
+    return apiClient.put<{ message: string }>('/user/profile', profileData);
   },
 
   requestEditorAccess: async (userId: number): Promise<{ message: string }> => {
@@ -709,6 +764,30 @@ export const editorApi = {
   },
 };
 
+// Practice Areas API
+export interface PracticeArea {
+  value: string;
+  label: string;
+  description: string;
+  post_count?: number;
+  has_content?: boolean;
+}
+
+export const practiceAreasApi = {
+  // Get all available practice areas
+  getPracticeAreas: async (): Promise<{ practice_areas: PracticeArea[] }> => {
+    return apiClient.get('/api/practice-areas');
+  },
+
+  // Get practice areas with content statistics
+  getPracticeAreaCategories: async (): Promise<{
+    categories: PracticeArea[];
+    total_categories: number;
+  }> => {
+    return apiClient.get('/api/practice-areas/categories');
+  },
+};
+
 // Content Management Types
 export interface BlogPost {
   content_id: number;
@@ -728,6 +807,10 @@ export interface BlogPost {
   publication_date: string;
   author_name: string;
   comment_count: number;
+  views?: number;
+  likes?: number;
+  shares?: number;
+  engagement_score?: number;
 }
 
 export interface ResearchPaper {
@@ -904,12 +987,16 @@ export const contentApi = {
   getBlogPosts: async (params?: {
     category?: string;
     status?: string;
+    sort_by?: 'recent' | 'popular' | 'engagement';
+    practice_area?: string;
     page?: number;
     limit?: number;
   }): Promise<{ blog_posts: BlogPost[]; total: number }> => {
     const queryParams = new URLSearchParams();
     if (params?.category) queryParams.append('category', params.category);
     if (params?.status) queryParams.append('status', params.status);
+    if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params?.practice_area) queryParams.append('practice_area', params.practice_area);
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
@@ -1455,6 +1542,66 @@ export const contentApi = {
 
   getLikeStatus: async (contentId: number): Promise<LikeStatusResponse> => {
     return apiClient.get<LikeStatusResponse>(`/api/content/${contentId}/like-status`);
+  },
+};
+
+// Contributor API
+export const contributorApi = {
+  // Get contributor statistics for profile page
+  getStats: async (): Promise<{
+    totalBlogPosts: number;
+    totalNotes: number;
+    totalViews: number;
+    totalLikes: number;
+    totalShares: number;
+    totalComments: number;
+    joinDate: string;
+    lastActive: string;
+    featuredContent: number;
+    publishedContent: number;
+  }> => {
+    const response = await apiClient.get<{
+      success: boolean;
+      stats: {
+        totalBlogPosts: number;
+        totalNotes: number;
+        totalViews: number;
+        totalLikes: number;
+        totalShares: number;
+        totalComments: number;
+        joinDate: string;
+        lastActive: string;
+        featuredContent: number;
+        publishedContent: number;
+      };
+    }>('/api/contributor/stats');
+    return response.stats;
+  },
+};
+
+// Credit System API calls
+export const creditApi = {
+  // Get current credit balance
+  getBalance: async (): Promise<CreditBalance> => {
+    return apiClient.get<CreditBalance>('/api/credits/balance');
+  },
+
+  // Get credit transaction history
+  getTransactions: async (params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<CreditTransactionHistory> => {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+
+    const endpoint = `/api/credits/transactions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiClient.get<CreditTransactionHistory>(endpoint);
+  },
+
+  // Get credit statistics
+  getStatistics: async (): Promise<CreditStatistics> => {
+    return apiClient.get<CreditStatistics>('/api/credits/statistics');
   },
 };
 

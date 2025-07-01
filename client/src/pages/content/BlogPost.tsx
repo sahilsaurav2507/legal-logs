@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { contentApi, userApi, BlogPost as BlogPostType, Comment } from '@/services/api';
 import { getOptimizedImageUrl, handleImageError } from '@/utils/imageUtils';
+import { formatBlogContent, sanitizeHtml } from '@/utils/textUtils';
 
 const BlogPost = () => {
   const { id } = useParams();
@@ -542,8 +543,10 @@ const BlogPost = () => {
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-200 mb-8">
           <div className="p-8 lg:p-12">
             <div
-              className="prose prose-lg max-w-none prose-headings:text-black prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-gray-600 prose-strong:text-black prose-blockquote:border-gray-300 prose-blockquote:bg-gray-50 prose-blockquote:text-gray-700"
-              dangerouslySetInnerHTML={{ __html: post.content || '' }}
+              className="prose prose-lg max-w-none prose-headings:text-lawvriksh-navy prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-lawvriksh-burgundy prose-a:hover:text-lawvriksh-navy prose-strong:text-lawvriksh-navy prose-blockquote:border-lawvriksh-gold prose-blockquote:bg-gray-50 prose-blockquote:text-gray-700 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-li:text-gray-700"
+              dangerouslySetInnerHTML={{
+                __html: sanitizeHtml(post.content || '')
+              }}
             />
           </div>
         </div>

@@ -467,6 +467,132 @@ const MinimalBlogWriter = () => {
     }
   };
 
+  // Parse pasted content into appropriate blocks
+  const parseContentIntoBlocks = (content: string, type: 'html' | 'text') => {
+    const blocks: any[] = [];
+    let idCounter = Date.now();
+
+    if (type === 'html') {
+      // Parse HTML content
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      const elements = Array.from(doc.body.children);
+
+      elements.forEach((element) => {
+        const textContent = element.textContent?.trim() || '';
+        if (!textContent) return;
+
+        let blockType = 'paragraph';
+
+        switch (element.tagName.toLowerCase()) {
+          case 'h1': blockType = 'heading1'; break;
+          case 'h2': blockType = 'heading2'; break;
+          case 'h3': blockType = 'heading3'; break;
+          case 'h4': blockType = 'heading4'; break;
+          case 'h5': blockType = 'heading3'; break; // Map h5 to h3
+          case 'h6': blockType = 'heading4'; break; // Map h6 to h4
+          case 'blockquote': blockType = 'quote'; break;
+          case 'pre':
+          case 'code': blockType = 'code'; break;
+          case 'ul':
+            // Handle unordered lists - create separate blocks for each li
+            const listItems = Array.from(element.querySelectorAll('li'));
+            listItems.forEach((li) => {
+              const liText = li.textContent?.trim();
+              if (liText) {
+                blocks.push({
+                  id: idCounter++,
+                  type: 'bullet-list',
+                  content: liText,
+                  placeholder: getPlaceholderForBlock('bullet-list')
+                });
+              }
+            });
+            return; // Skip the default block creation
+          case 'ol':
+            // Handle ordered lists - create separate blocks for each li
+            const orderedItems = Array.from(element.querySelectorAll('li'));
+            orderedItems.forEach((li) => {
+              const liText = li.textContent?.trim();
+              if (liText) {
+                blocks.push({
+                  id: idCounter++,
+                  type: 'numbered-list',
+                  content: liText,
+                  placeholder: getPlaceholderForBlock('numbered-list')
+                });
+              }
+            });
+            return; // Skip the default block creation
+          default: blockType = 'paragraph';
+        }
+
+        blocks.push({
+          id: idCounter++,
+          type: blockType,
+          content: textContent,
+          placeholder: getPlaceholderForBlock(blockType)
+        });
+      });
+
+      // If no HTML elements were found, treat as plain text
+      if (blocks.length === 0) {
+        return parseContentIntoBlocks(content, 'text');
+      }
+    } else {
+      // Parse plain text content
+      const lines = content.split('\n').filter(line => line.trim());
+
+      lines.forEach((line) => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) return;
+
+        let blockType = 'paragraph';
+        let content = trimmedLine;
+
+        // Detect markdown-style headings
+        if (trimmedLine.startsWith('# ')) {
+          blockType = 'heading1';
+          content = trimmedLine.substring(2).trim();
+        } else if (trimmedLine.startsWith('## ')) {
+          blockType = 'heading2';
+          content = trimmedLine.substring(3).trim();
+        } else if (trimmedLine.startsWith('### ')) {
+          blockType = 'heading3';
+          content = trimmedLine.substring(4).trim();
+        } else if (trimmedLine.startsWith('#### ')) {
+          blockType = 'heading4';
+          content = trimmedLine.substring(5).trim();
+        } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ') || trimmedLine.startsWith('• ')) {
+          // Bullet points
+          blockType = 'bullet-list';
+          content = trimmedLine.substring(2).trim();
+        } else if (/^\d+\.\s/.test(trimmedLine)) {
+          // Numbered lists (1. 2. etc.)
+          blockType = 'numbered-list';
+          content = trimmedLine.replace(/^\d+\.\s/, '').trim();
+        } else if (trimmedLine.startsWith('> ')) {
+          // Blockquotes
+          blockType = 'quote';
+          content = trimmedLine.substring(2).trim();
+        } else if (trimmedLine.startsWith('```') || trimmedLine.startsWith('`')) {
+          // Code blocks (simplified detection)
+          blockType = 'code';
+          content = trimmedLine.replace(/^`+/, '').replace(/`+$/, '').trim();
+        }
+
+        blocks.push({
+          id: idCounter++,
+          type: blockType,
+          content: content,
+          placeholder: getPlaceholderForBlock(blockType)
+        });
+      });
+    }
+
+    return blocks;
+  };
+
   // Update block content
   const updateBlockContent = (blockId: number, newContent: string) => {
     setEditorContent(prev =>
@@ -484,6 +610,80 @@ const MinimalBlogWriter = () => {
       const filtered = prev.filter(block => block.id !== blockId);
       return filtered.length === 0 ? [{ id: Date.now(), type: 'paragraph', content: '', placeholder: '' }] : filtered;
     });
+  };
+
+  // Handle paste events for blocks
+  const handleBlockPaste = (e: React.ClipboardEvent<HTMLDivElement>, blockId: number) => {
+    e.preventDefault();
+
+    const clipboardData = e.clipboardData;
+    const htmlData = clipboardData.getData('text/html');
+    const textData = clipboardData.getData('text/plain');
+
+    // Use HTML data if available, otherwise fall back to plain text
+    const contentToParse = htmlData || textData;
+
+    if (!contentToParse.trim()) return;
+
+    // Parse the pasted content into blocks
+    const parsedBlocks = parseContentIntoBlocks(contentToParse, htmlData ? 'html' : 'text');
+
+    if (parsedBlocks.length === 0) return;
+
+    // Find current block index
+    const currentBlockIndex = editorContent.findIndex(b => b.id === blockId);
+    if (currentBlockIndex === -1) return;
+
+    // If we have multiple blocks, replace current block and insert others
+    if (parsedBlocks.length > 1) {
+      setEditorContent(prev => {
+        const newContent = [...prev];
+        // Replace current block with first parsed block
+        newContent[currentBlockIndex] = parsedBlocks[0];
+        // Insert remaining blocks after current position
+        newContent.splice(currentBlockIndex + 1, 0, ...parsedBlocks.slice(1));
+        return newContent;
+      });
+
+      // Focus the last inserted block
+      setTimeout(() => {
+        const lastBlock = parsedBlocks[parsedBlocks.length - 1];
+        const element = document.getElementById(`block-${lastBlock.id}`);
+        if (element) {
+          element.focus();
+          // Move cursor to end
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(element);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      }, 100);
+    } else {
+      // Single block - just update current block content
+      setEditorContent(prev =>
+        prev.map(block =>
+          block.id === blockId ? { ...block, content: parsedBlocks[0].content } : block
+        )
+      );
+
+      // Update the DOM element content
+      setTimeout(() => {
+        const element = document.getElementById(`block-${blockId}`);
+        if (element) {
+          element.textContent = parsedBlocks[0].content;
+          element.focus();
+          // Move cursor to end
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(element);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      }, 10);
+    }
   };
 
   // Convert editor content to HTML for saving
@@ -831,6 +1031,11 @@ const MinimalBlogWriter = () => {
   };
 
   const handleSaveDraft = async () => {
+    // Prevent double submission
+    if (saving) {
+      return;
+    }
+
     if (!title.trim()) {
       toast({
         title: "Title Required",
@@ -868,18 +1073,34 @@ const MinimalBlogWriter = () => {
         navigate(`/blogs/${response.content_id}/edit`);
         return;
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save draft.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      console.error('Error saving draft:', error);
+
+      // Handle specific duplicate title error
+      if (error.message && error.message.includes('already exists')) {
+        toast({
+          title: "Duplicate Title",
+          description: "A blog post with this title already exists. Please use a different title.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save draft.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setSaving(false);
     }
   };
 
   const handlePublish = async () => {
+    // Prevent double submission
+    if (saving) {
+      return;
+    }
+
     try {
       setSaving(true);
       const submitData = {
@@ -910,12 +1131,23 @@ const MinimalBlogWriter = () => {
       }
 
       navigate('/blogs');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to publish blog post.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      console.error('Error publishing blog post:', error);
+
+      // Handle specific duplicate title error
+      if (error.message && error.message.includes('already exists')) {
+        toast({
+          title: "Duplicate Title",
+          description: "A blog post with this title already exists. Please use a different title.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to publish blog post.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setSaving(false);
       setShowPublishDialog(false);
@@ -1135,6 +1367,7 @@ const MinimalBlogWriter = () => {
                   index={index}
                   onContentChange={handleBlockContentChange}
                   onKeyDown={handleBlockKeyDown}
+                  onPaste={handleBlockPaste}
                   onDelete={deleteBlock}
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
@@ -1499,6 +1732,7 @@ interface EditorBlockProps {
   index: number;
   onContentChange: (blockId: number, content: string, element: HTMLElement) => void;
   onKeyDown: (e: React.KeyboardEvent, blockId: number, index: number) => void;
+  onPaste: (e: React.ClipboardEvent<HTMLDivElement>, blockId: number) => void;
   onDelete: (blockId: number) => void;
   onDragStart: (e: React.DragEvent, blockId: number) => void;
   onDragOver: (e: React.DragEvent, index: number) => void;
@@ -1518,6 +1752,7 @@ const EditorBlock: React.FC<EditorBlockProps> = ({
   index,
   onContentChange,
   onKeyDown,
+  onPaste,
   onDelete,
   onDragStart,
   onDragOver,
@@ -1540,6 +1775,27 @@ const EditorBlock: React.FC<EditorBlockProps> = ({
     const target = e.target as HTMLDivElement;
     const content = target.textContent || '';
     onContentChange(block.id, content, target);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    onPaste(e, block.id);
+  };
+
+  // Get placeholder text for different block types
+  const getPlaceholderText = () => {
+    switch (block.type) {
+      case 'heading1': return 'Heading 1';
+      case 'heading2': return 'Heading 2';
+      case 'heading3': return 'Heading 3';
+      case 'heading4': return 'Heading 4';
+      case 'bullet-list': return 'List item';
+      case 'numbered-list': return 'List item';
+      case 'quote': return 'Quote';
+      case 'code': return 'Enter code...';
+      case 'paragraph':
+      default:
+        return isFocused ? 'Type \'/\' for commands' : '';
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1704,10 +1960,11 @@ const EditorBlock: React.FC<EditorBlockProps> = ({
           spellCheck={spellCheckEnabled}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           onFocus={handleFocus}
           onBlur={handleBlur}
           className={cn(getBlockStyles(), 'editor-block')}
-          data-placeholder={block.content ? '' : (block.type === 'paragraph' ? (isFocused ? 'Type \'/\' for commands' : '') : block.placeholder)}
+          data-placeholder={block.content ? '' : getPlaceholderText()}
           style={{
             minHeight: block.type.startsWith('heading') ? 'auto' : '1.5em'
           }}

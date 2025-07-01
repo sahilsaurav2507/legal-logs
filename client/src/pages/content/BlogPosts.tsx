@@ -349,7 +349,7 @@ const BlogPosts = () => {
               const tags = post.tags ? post.tags.split(',').map(tag => tag.trim()) : [];
               return (
                 <article key={post.content_id} className="group cursor-pointer">
-                  <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-200 hover:border-gray-400">
+                  <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-lawvriksh-navy/20 hover:border-lawvriksh-navy/40">
                     {/* Image Container */}
                     <div className="relative aspect-[16/10] overflow-hidden">
                       <img
@@ -390,26 +390,26 @@ const BlogPosts = () => {
                     {/* Content */}
                     <div className="p-6">
                       {/* Title */}
-                      <Link to={`/blogs/${post.content_id}`} className="block group-hover:text-gray-600 transition-colors duration-300">
-                        <h2 className="text-xl font-bold text-black mb-3 line-clamp-2 leading-tight">
+                      <Link to={`/blogs/${post.content_id}`} className="block group-hover:text-lawvriksh-navy/80 transition-colors duration-300">
+                        <h2 className="text-xl font-bold text-lawvriksh-navy legal-heading mb-3 line-clamp-2 leading-tight">
                           {post.title}
                         </h2>
                       </Link>
 
                       {/* Summary */}
-                      <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-3">
+                      <p className="text-lawvriksh-gray text-sm leading-relaxed mb-4 line-clamp-3 legal-text">
                         {post.summary}
                       </p>
 
                       {/* Tags */}
                       <div className="flex flex-wrap gap-2 mb-4">
                         {tags.slice(0, 3).map((tag) => (
-                          <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium border border-gray-300">
+                          <span key={tag} className="px-2 py-1 bg-lawvriksh-gold/10 text-lawvriksh-navy text-xs rounded-full font-medium border border-lawvriksh-gold/30">
                             #{tag}
                           </span>
                         ))}
                         {tags.length > 3 && (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-medium border border-gray-300">
+                          <span className="px-2 py-1 bg-lawvriksh-gold/10 text-lawvriksh-navy text-xs rounded-full font-medium border border-lawvriksh-gold/30">
                             +{tags.length - 3} more
                           </span>
                         )}

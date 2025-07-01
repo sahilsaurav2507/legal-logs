@@ -79,6 +79,7 @@ interface EditorBlockProps {
   index: number;
   onContentChange: (id: number, content: string, element: HTMLDivElement) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>, id: number, index: number) => void;
+  onPaste: (e: React.ClipboardEvent<HTMLDivElement>, blockId: number) => void;
   onDelete: (id: number) => void;
   onDragStart: (e: React.DragEvent, id: number) => void;
   onDragOver: (e: React.DragEvent, index: number) => void;
@@ -276,6 +277,164 @@ const NoteTextEditor: React.FC<NoteTextEditorProps> = ({
       case 'paragraph': return '';
       default: return '';
     }
+  };
+
+  // Parse pasted content into appropriate blocks
+  const parseContentIntoBlocks = (content: string, type: 'html' | 'text'): EditorBlock[] => {
+    const blocks: EditorBlock[] = [];
+    let idCounter = Date.now();
+
+    if (type === 'html') {
+      // Parse HTML content
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+
+      // Get all elements, not just direct children
+      const allElements = Array.from(doc.body.querySelectorAll('*'));
+      const processedElements = new Set<Element>();
+
+      // Process elements in document order
+      const elementsToProcess = Array.from(doc.body.children);
+
+      // If no block-level elements found, check if there's any text content
+      if (elementsToProcess.length === 0) {
+        const bodyText = doc.body.textContent?.trim();
+        if (bodyText) {
+          // Treat as plain text
+          return parseContentIntoBlocks(bodyText, 'text');
+        }
+        return blocks;
+      }
+
+      elementsToProcess.forEach((element) => {
+        if (processedElements.has(element)) return;
+
+        const textContent = element.textContent?.trim() || '';
+        if (!textContent) return;
+
+        let blockType = 'paragraph';
+
+        switch (element.tagName.toLowerCase()) {
+          case 'h1': blockType = 'heading1'; break;
+          case 'h2': blockType = 'heading2'; break;
+          case 'h3': blockType = 'heading3'; break;
+          case 'h4': blockType = 'heading4'; break;
+          case 'h5': blockType = 'heading3'; break; // Map h5 to h3
+          case 'h6': blockType = 'heading4'; break; // Map h6 to h4
+          case 'blockquote': blockType = 'quote'; break;
+          case 'pre':
+          case 'code': blockType = 'code'; break;
+          case 'ul':
+            // Handle unordered lists - create separate blocks for each li
+            const listItems = Array.from(element.querySelectorAll('li'));
+            listItems.forEach((li) => {
+              const liText = li.textContent?.trim();
+              if (liText) {
+                blocks.push({
+                  id: idCounter++,
+                  type: 'bullet-list',
+                  content: liText,
+                  placeholder: getPlaceholderForBlock('bullet-list')
+                });
+              }
+            });
+            processedElements.add(element);
+            return; // Skip the default block creation
+          case 'ol':
+            // Handle ordered lists - create separate blocks for each li
+            const orderedItems = Array.from(element.querySelectorAll('li'));
+            orderedItems.forEach((li) => {
+              const liText = li.textContent?.trim();
+              if (liText) {
+                blocks.push({
+                  id: idCounter++,
+                  type: 'numbered-list',
+                  content: liText,
+                  placeholder: getPlaceholderForBlock('numbered-list')
+                });
+              }
+            });
+            processedElements.add(element);
+            return; // Skip the default block creation
+          case 'p':
+          case 'div':
+            // For paragraphs and divs, check if they contain only text or simple formatting
+            blockType = 'paragraph';
+            break;
+          default:
+            // For other elements, treat as paragraph
+            blockType = 'paragraph';
+        }
+
+        blocks.push({
+          id: idCounter++,
+          type: blockType,
+          content: textContent,
+          placeholder: getPlaceholderForBlock(blockType)
+        });
+
+        processedElements.add(element);
+      });
+
+      // If no blocks were created from HTML, try plain text parsing
+      if (blocks.length === 0) {
+        const plainText = doc.body.textContent?.trim();
+        if (plainText) {
+          return parseContentIntoBlocks(plainText, 'text');
+        }
+      }
+    } else {
+      // Parse plain text content
+      const lines = content.split('\n').filter(line => line.trim());
+
+      lines.forEach((line) => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) return;
+
+        let blockType = 'paragraph';
+        let content = trimmedLine;
+
+        // Detect markdown-style headings
+        if (trimmedLine.startsWith('# ')) {
+          blockType = 'heading1';
+          content = trimmedLine.substring(2).trim();
+        } else if (trimmedLine.startsWith('## ')) {
+          blockType = 'heading2';
+          content = trimmedLine.substring(3).trim();
+        } else if (trimmedLine.startsWith('### ')) {
+          blockType = 'heading3';
+          content = trimmedLine.substring(4).trim();
+        } else if (trimmedLine.startsWith('#### ')) {
+          blockType = 'heading4';
+          content = trimmedLine.substring(5).trim();
+        } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ') || trimmedLine.startsWith('• ')) {
+          // Bullet points
+          blockType = 'bullet-list';
+          content = trimmedLine.substring(2).trim();
+        } else if (/^\d+\.\s/.test(trimmedLine)) {
+          // Numbered lists (1. 2. etc.)
+          blockType = 'numbered-list';
+          content = trimmedLine.replace(/^\d+\.\s/, '').trim();
+        } else if (trimmedLine.startsWith('> ')) {
+          // Blockquotes
+          blockType = 'quote';
+          content = trimmedLine.substring(2).trim();
+        } else if (trimmedLine.startsWith('```') || trimmedLine.startsWith('`')) {
+          // Code blocks (simplified detection)
+          blockType = 'code';
+          content = trimmedLine.replace(/^`+/, '').replace(/`+$/, '').trim();
+        }
+
+        blocks.push({
+          id: idCounter++,
+          type: blockType,
+          content: content,
+          placeholder: getPlaceholderForBlock(blockType)
+        });
+      });
+    }
+
+    return blocks;
   };
 
   // Insert new block function
@@ -516,6 +675,79 @@ const NoteTextEditor: React.FC<NoteTextEditorProps> = ({
     if (editorContent.length <= 1) return;
 
     setEditorContent(prev => prev.filter(block => block.id !== id));
+  };
+
+  // Handle paste events for blocks
+  const handleBlockPaste = (e: React.ClipboardEvent<HTMLDivElement>, blockId: number) => {
+    e.preventDefault();
+
+    const clipboardData = e.clipboardData;
+    const htmlData = clipboardData.getData('text/html');
+    const textData = clipboardData.getData('text/plain');
+
+    // Use HTML data if available, otherwise fall back to plain text
+    const contentToParse = htmlData || textData;
+
+    if (!contentToParse.trim()) return;
+
+    // Parse the pasted content into blocks
+    const parsedBlocks = parseContentIntoBlocks(contentToParse, htmlData ? 'html' : 'text');
+
+    if (parsedBlocks.length === 0) return;
+
+    // Find current block index
+    const currentBlockIndex = editorContent.findIndex(b => b.id === blockId);
+    if (currentBlockIndex === -1) return;
+
+    // If we have multiple blocks, replace current block and insert others
+    if (parsedBlocks.length > 1) {
+      setEditorContent(prev => {
+        const newContent = [...prev];
+        // Replace current block with first parsed block
+        newContent[currentBlockIndex] = parsedBlocks[0];
+        // Insert remaining blocks after current position
+        newContent.splice(currentBlockIndex + 1, 0, ...parsedBlocks.slice(1));
+        return newContent;
+      });
+
+      // Focus the last inserted block (content will be synced by useEffect)
+      setTimeout(() => {
+        const lastBlock = parsedBlocks[parsedBlocks.length - 1];
+        const lastElement = document.getElementById(`block-${lastBlock.id}`);
+        if (lastElement) {
+          lastElement.focus();
+          // Move cursor to end
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(lastElement);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      }, 100);
+    } else {
+      // Single block - just update current block content
+      setEditorContent(prev =>
+        prev.map(block =>
+          block.id === blockId ? { ...block, content: parsedBlocks[0].content } : block
+        )
+      );
+
+      // Focus the updated block (content will be synced by useEffect)
+      setTimeout(() => {
+        const element = document.getElementById(`block-${blockId}`);
+        if (element) {
+          element.focus();
+          // Move cursor to end
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(element);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      }, 10);
+    }
   };
 
   // Spell checking functions
@@ -867,6 +1099,7 @@ const NoteTextEditor: React.FC<NoteTextEditorProps> = ({
                 index={index}
                 onContentChange={handleBlockContentChange}
                 onKeyDown={handleBlockKeyDown}
+                onPaste={handleBlockPaste}
                 onDelete={deleteBlock}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
@@ -1133,6 +1366,7 @@ const EditorBlock: React.FC<EditorBlockProps> = ({
   index,
   onContentChange,
   onKeyDown,
+  onPaste,
   onDelete,
   onDragStart,
   onDragOver,
@@ -1151,10 +1385,25 @@ const EditorBlock: React.FC<EditorBlockProps> = ({
   const [dragHandleHovered, setDragHandleHovered] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Sync DOM content with block content when it changes
+  useEffect(() => {
+    if (blockRef.current && block.content !== undefined) {
+      // Only update if the DOM content is different from the block content
+      const currentDOMContent = blockRef.current.textContent || '';
+      if (currentDOMContent !== block.content) {
+        blockRef.current.textContent = block.content;
+      }
+    }
+  }, [block.content]);
+
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
     const content = target.textContent || '';
     onContentChange(block.id, content, target);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    onPaste(e, block.id);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1327,6 +1576,7 @@ const EditorBlock: React.FC<EditorBlockProps> = ({
           spellCheck={spellCheckEnabled}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           onFocus={handleFocus}
           onBlur={handleBlur}
           className={cn(getBlockStyles(), 'editor-block')}

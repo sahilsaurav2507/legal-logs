@@ -120,13 +120,13 @@ const UserDashboard = () => {
 
   return (
     <div className="space-y-8 professional-fade-in">
-      {/* Black & White Welcome Section */}
+      {/* Professional LawVriksh Welcome Section */}
       <AnimatedWrapper animation="slideUp">
-        <div className="bg-gradient-to-r from-gray-900 via-black to-gray-800 rounded-xl p-8 border border-gray-700 shadow-xl">
+        <div className="bg-gradient-to-r from-lawvriksh-navy via-lawvriksh-navy-dark to-lawvriksh-navy rounded-xl p-8 border border-lawvriksh-navy-light shadow-xl">
           <h1 className="text-3xl font-bold text-white legal-heading">
             Welcome back, {user?.fullName}!
           </h1>
-          <p className="text-gray-300 text-lg mt-3 legal-text">
+          <p className="text-gray-200 text-lg mt-3 legal-text">
             Here's what's happening with your legal career journey.
           </p>
         </div>
@@ -140,18 +140,18 @@ const UserDashboard = () => {
       >
         {stats.map((stat, index) => (
           <HoverAnimation key={index} scale={1.02} lift>
-            <Card className="professional-card-hover border border-gray-200 shadow-lg bg-white">
+            <Card className="professional-card-hover border border-lawvriksh-navy/20 shadow-lg bg-white hover:border-lawvriksh-navy/40 transition-all duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-gray-700">
+                <CardTitle className="text-sm font-semibold text-lawvriksh-navy legal-heading">
                   {stat.title}
                 </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor} border border-gray-300`}>
+                <div className={`p-2 rounded-lg ${stat.bgColor} border border-lawvriksh-navy/20`}>
                   <stat.icon className={`h-5 w-5 ${stat.color}`} />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-black mb-1">{stat.value}</div>
-                <p className="text-sm text-gray-600 legal-text">
+                <div className="text-3xl font-bold text-lawvriksh-navy legal-heading mb-1">{stat.value}</div>
+                <p className="text-sm text-lawvriksh-gray legal-text">
                   {stat.description}
                 </p>
               </CardContent>

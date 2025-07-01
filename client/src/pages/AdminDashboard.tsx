@@ -821,38 +821,38 @@ const AdminDashboard = () => {
               <TabsContent value="overview" className="space-y-8">
                 {/* Stats Cards - Modernized */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 group">
+                  <Card className="border border-lawvriksh-navy/20 shadow-lg hover:shadow-xl transition-all duration-300 group hover:border-lawvriksh-navy/40">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
-                        <div className="p-3 rounded-2xl bg-gray-100 group-hover:scale-105 transition-transform duration-300 border border-gray-300">
-                          <Users className="h-6 w-6 text-gray-700" />
+                        <div className="p-3 rounded-2xl bg-lawvriksh-navy/5 group-hover:scale-105 transition-transform duration-300 border border-lawvriksh-navy/20">
+                          <Users className="h-6 w-6 text-lawvriksh-navy" />
                         </div>
-                        <Badge className="bg-gray-100 text-gray-800 border border-gray-300 text-xs font-semibold">
+                        <Badge className="bg-lawvriksh-gold/10 text-lawvriksh-navy border border-lawvriksh-gold/30 text-xs font-semibold">
                           +12%
                         </Badge>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-600 modern-subtitle">Total Users</p>
-                        <p className="text-3xl font-bold text-black modern-display">{analytics?.total_users || 0}</p>
-                        <p className="text-xs text-gray-500">Active registered users</p>
+                        <p className="text-sm font-medium text-lawvriksh-gray legal-text">Total Users</p>
+                        <p className="text-3xl font-bold text-lawvriksh-navy legal-heading">{analytics?.total_users || 0}</p>
+                        <p className="text-xs text-lawvriksh-gray-light legal-text">Active registered users</p>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 group">
+                  <Card className="border border-lawvriksh-navy/20 shadow-lg hover:shadow-xl transition-all duration-300 group hover:border-lawvriksh-navy/40">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
-                        <div className="p-3 rounded-2xl bg-gray-100 group-hover:scale-105 transition-transform duration-300 border border-gray-300">
-                          <Activity className="h-6 w-6 text-gray-700" />
+                        <div className="p-3 rounded-2xl bg-lawvriksh-navy/5 group-hover:scale-105 transition-transform duration-300 border border-lawvriksh-navy/20">
+                          <Activity className="h-6 w-6 text-lawvriksh-navy" />
                         </div>
-                        <Badge className="bg-gray-100 text-gray-800 border border-gray-300 text-xs font-semibold">
+                        <Badge className="bg-lawvriksh-gold/10 text-lawvriksh-navy border border-lawvriksh-gold/30 text-xs font-semibold">
                           +8%
                         </Badge>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-600 modern-subtitle">Active Users</p>
-                        <p className="text-3xl font-bold text-black modern-display">{analytics?.active_users || 0}</p>
-                        <p className="text-xs text-gray-500">Active in last 30 days</p>
+                        <p className="text-sm font-medium text-lawvriksh-gray legal-text">Active Users</p>
+                        <p className="text-3xl font-bold text-lawvriksh-navy legal-heading">{analytics?.active_users || 0}</p>
+                        <p className="text-xs text-lawvriksh-gray-light legal-text">Active in last 30 days</p>
                       </div>
                     </CardContent>
                   </Card>

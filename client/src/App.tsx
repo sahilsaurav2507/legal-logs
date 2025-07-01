@@ -15,13 +15,15 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { getEnabledNavigationItems } from '@/config/features';
 
 // Lazy load pages for better performance
-const Index = React.lazy(() => import("./pages/Index"));
+const Home = React.lazy(() => import("./pages/Home2"));
 const Login = React.lazy(() => import("./pages/Login"));
 const Signup = React.lazy(() => import("./pages/Signup"));
 const Profile = React.lazy(() => import("./pages/Profile"));
 const AdminDashboard = React.lazy(() => import("./pages/AdminDashboard"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 const CompleteProfile = React.lazy(() => import("./pages/CompleteProfile"));
+const DigitalPortfolio = React.lazy(() => import("./pages/DigitalPortfolio"));
+const ResumeBuilder = React.lazy(() => import("./pages/ResumeBuilder"));
 
 // Lazy load content management pages
 const BlogPosts = React.lazy(() => import("./pages/content/BlogPosts"));
@@ -53,11 +55,13 @@ const ApplicationManagement = React.lazy(() => import("./pages/admin/Application
 // Lazy load dashboard pages
 const UserDashboard = React.lazy(() => import("./pages/dashboard/UserDashboard"));
 const EditorDashboard = React.lazy(() => import("./pages/dashboard/EditorDashboard"));
+const CreditDashboard = React.lazy(() => import("./components/dashboard/CreditDashboard"));
 
 // Lazy load advanced features
 const Notifications = React.lazy(() => import("./pages/Notifications"));
 const GlobalSearch = React.lazy(() => import("./pages/GlobalSearch"));
 const Settings = React.lazy(() => import("./pages/Settings"));
+const TestRecommendations = React.lazy(() => import("./pages/TestRecommendations"));
 
 const queryClient = new QueryClient();
 // Note: This is a demo client ID. For production, you need to:
@@ -80,7 +84,7 @@ const App = () => {
                   <Suspense fallback={<LoadingSpinner />}>
                     <Routes>
                       {/* Public Routes */}
-                      <Route path="/" element={<Index />} />
+                      <Route path="/" element={<Home />} />
                       <Route path="/login" element={<Login />} />
                       <Route path="/signup" element={<Signup />} />
                       <Route path="/complete-profile" element={<CompleteProfile />} />
@@ -92,6 +96,30 @@ const App = () => {
                           <ProtectedRoute>
                             <MainLayout>
                               <Profile />
+                            </MainLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+
+                      {/* Digital Portfolio - Only for Editors and Admins */}
+                      <Route
+                        path="/digital-portfolio"
+                        element={
+                          <ProtectedRoute allowedRoles={[UserRole.EDITOR, UserRole.ADMIN]}>
+                            <MainLayout>
+                              <DigitalPortfolio />
+                            </MainLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+
+                      {/* Resume Builder - Only for Editors and Admins */}
+                      <Route
+                        path="/resume-builder"
+                        element={
+                          <ProtectedRoute allowedRoles={[UserRole.EDITOR, UserRole.ADMIN]}>
+                            <MainLayout>
+                              <ResumeBuilder />
                             </MainLayout>
                           </ProtectedRoute>
                         }
@@ -124,6 +152,16 @@ const App = () => {
                           <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                             <MainLayout>
                               <AdminDashboard />
+                            </MainLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/credits"
+                        element={
+                          <ProtectedRoute allowedRoles={[UserRole.EDITOR, UserRole.ADMIN]}>
+                            <MainLayout>
+                              <CreditDashboard />
                             </MainLayout>
                           </ProtectedRoute>
                         }
@@ -471,6 +509,18 @@ const App = () => {
                           <ProtectedRoute>
                             <MainLayout>
                               <Settings />
+                            </MainLayout>
+                          </ProtectedRoute>
+                        }
+                      />
+
+                      {/* Test Recommendations - Development/Testing Route */}
+                      <Route
+                        path="/test-recommendations"
+                        element={
+                          <ProtectedRoute>
+                            <MainLayout>
+                              <TestRecommendations />
                             </MainLayout>
                           </ProtectedRoute>
                         }

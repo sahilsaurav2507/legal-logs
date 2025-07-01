@@ -41,6 +41,7 @@ import { Link } from 'react-router-dom';
 import { editorApi, contentApi, EditorAnalytics, AdminAnalytics, JobApplication, InternshipApplication } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import ContentAnalytics from '@/components/ContentAnalytics';
+import CreditSummary from '@/components/dashboard/CreditSummary';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import PageTransition from '@/components/ui/page-transition';
 import ProfessionalLoading from '@/components/ui/professional-loading';
@@ -551,21 +552,21 @@ const EditorDashboard = () => {
                     description: 'vs last month'
                   }
                 ].map((metric, index) => (
-                  <Card key={index} className="relative overflow-hidden border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 group bg-white">
-                    <div className={`absolute inset-0 bg-gradient-to-br ${metric.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+                  <Card key={index} className="relative overflow-hidden border border-lawvriksh-navy/20 shadow-lg hover:shadow-xl transition-all duration-300 group bg-white hover:border-lawvriksh-navy/40">
+                    <div className={`absolute inset-0 bg-gradient-to-br from-lawvriksh-navy to-lawvriksh-navy-dark opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
                     <CardContent className="p-6 relative">
                       <div className="flex items-start justify-between mb-4">
-                        <div className={`p-3 rounded-2xl ${metric.bgColor} group-hover:scale-110 transition-transform duration-300 border border-gray-300`}>
+                        <div className={`p-3 rounded-2xl ${metric.bgColor} group-hover:scale-110 transition-transform duration-300 border border-lawvriksh-navy/20`}>
                           <metric.icon className={`h-6 w-6 ${metric.iconColor}`} />
                         </div>
-                        <Badge className="bg-gray-100 text-gray-800 border border-gray-300 text-xs font-semibold px-2 py-1">
+                        <Badge className="bg-lawvriksh-gold/10 text-lawvriksh-navy border border-lawvriksh-gold/30 text-xs font-semibold px-2 py-1">
                           {metric.trend}
                         </Badge>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-600 modern-subtitle">{metric.title}</p>
-                        <p className="text-3xl font-bold text-black modern-display">{metric.value}</p>
-                        <p className="text-xs text-gray-500">{metric.description}</p>
+                        <p className="text-sm font-medium text-lawvriksh-gray legal-text">{metric.title}</p>
+                        <p className="text-3xl font-bold text-lawvriksh-navy legal-heading">{metric.value}</p>
+                        <p className="text-xs text-lawvriksh-gray-light legal-text">{metric.description}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -573,19 +574,41 @@ const EditorDashboard = () => {
               </div>
             )}
 
+            {/* Credit Earnings Section - Only for Editors */}
+            {user?.role === 'Editor' && (
+              <Card className="border border-lawvriksh-navy/20 shadow-lg hover:shadow-xl transition-all duration-300 bg-white hover:border-lawvriksh-navy/40">
+                <CardHeader className="pb-4 bg-gradient-to-r from-lawvriksh-gold/5 to-lawvriksh-navy/5">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-white shadow-md border border-lawvriksh-gold/30">
+                      <Award className="h-6 w-6 text-lawvriksh-navy" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl text-lawvriksh-navy legal-heading">Credit Earnings</CardTitle>
+                      <CardDescription className="text-lawvriksh-gray mt-1 legal-text">
+                        Earn ₹10 for every like on your content
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <CreditSummary showFullDashboardLink={false} />
+                </CardContent>
+              </Card>
+            )}
+
             {/* 2x2 Grid Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Row 1: Performance Trends (Large) + Quick Actions (Small) */}
               <div className="lg:col-span-2">
-                <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 h-full bg-white">
-                  <CardHeader className="pb-6 bg-gradient-to-r from-gray-50 to-gray-100">
+                <Card className="border border-lawvriksh-navy/20 shadow-lg hover:shadow-xl transition-all duration-300 h-full bg-white hover:border-lawvriksh-navy/40">
+                  <CardHeader className="pb-6 bg-gradient-to-r from-lawvriksh-navy/5 to-lawvriksh-navy/10">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-2xl bg-white shadow-md border border-gray-300">
-                        <TrendingUp className="h-6 w-6 text-gray-800" />
+                      <div className="p-3 rounded-2xl bg-white shadow-md border border-lawvriksh-navy/20">
+                        <TrendingUp className="h-6 w-6 text-lawvriksh-navy" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl text-black modern-heading">Performance Trends</CardTitle>
-                        <CardDescription className="text-gray-600 mt-1">Content engagement over the last 30 days</CardDescription>
+                        <CardTitle className="text-xl text-lawvriksh-navy legal-heading">Performance Trends</CardTitle>
+                        <CardDescription className="text-lawvriksh-gray mt-1 legal-text">Content engagement over the last 30 days</CardDescription>
                       </div>
                     </div>
                   </CardHeader>

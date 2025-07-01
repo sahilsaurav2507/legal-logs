@@ -9,6 +9,7 @@ import { contentApi, Note } from '@/services/api';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import PDFViewer from '@/components/notes/PDFViewer';
 import { cn } from '@/lib/utils';
+import { formatBlogContent, sanitizeHtml } from '@/utils/textUtils';
 
 const NoteDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -255,10 +256,12 @@ const NoteDetail = () => {
               />
             </div>
           ) : (
-            <div className="prose max-w-none">
+            <div className="prose max-w-none prose-headings:text-lawvriksh-navy prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-lawvriksh-burgundy prose-a:hover:text-lawvriksh-navy prose-strong:text-lawvriksh-navy prose-ul:text-gray-700 prose-ol:text-gray-700 prose-li:text-gray-700">
               <div
-                className="text-gray-800 leading-relaxed whitespace-pre-wrap"
-                dangerouslySetInnerHTML={{ __html: note.content }}
+                className="text-gray-800 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeHtml(note.content || '')
+                }}
               />
             </div>
           )}

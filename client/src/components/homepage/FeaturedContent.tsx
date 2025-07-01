@@ -1,358 +1,416 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { contentApi, BlogPost, ResearchPaper, Note } from '@/services/api';
 import {
-  BookOpen,
-  FileText,
-  StickyNote,
+  TrendingUp,
+  Star,
+  Eye,
   Calendar,
   User,
   ArrowRight,
-  TrendingUp,
-  Star
+  FileText,
+  File,
+  Bookmark,
+  Heart,
+  MessageSquare,
+  Clock
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { contentApi, userApi, BlogPost, Note } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { getOptimizedImageUrl, handleImageError } from '@/utils/imageUtils';
 
-interface ContentCardProps {
-  title: string;
-  summary?: string;
-  author: string;
-  createdAt: string;
-  type: 'blog' | 'research' | 'note';
-  href: string;
-  featured?: boolean;
-  tags?: string;
+interface FeaturedContentProps {
   className?: string;
-  coverImage?: string;
 }
 
-const ContentCard: React.FC<ContentCardProps> = ({
-  title,
-  summary,
-  author,
-  createdAt,
-  type,
-  href,
-  featured = false,
-  tags,
-  className,
-  coverImage
-}) => {
-  const getTypeIcon = () => {
-    switch (type) {
-      case 'blog': return BookOpen;
-      case 'research': return FileText;
-      case 'note': return StickyNote;
-      default: return BookOpen;
-    }
-  };
+const FeaturedContent: React.FC<FeaturedContentProps> = ({ className }) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const getTypeColor = () => {
-    switch (type) {
-      case 'blog': return 'bg-blue-100 text-blue-800';
-      case 'research': return 'bg-green-100 text-green-800';
-      case 'note': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const TypeIcon = getTypeIcon();
-  const tagList = tags ? tags.split(',').map(tag => tag.trim()).slice(0, 2) : [];
-
-  return (
-    <Card className={cn(
-      "group cursor-pointer border-2 border-gray-100 hover:border-gray-900 transition-all duration-500 hover:shadow-2xl bg-white overflow-hidden",
-      "hover:-translate-y-2 transform-gpu",
-      className
-    )}>
-      {/* Cover Image */}
-      {coverImage && (
-        <div className="relative h-48 overflow-hidden">
-          <img
-            src={coverImage}
-            alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-          {featured && (
-            <Badge className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-xs font-bold px-3 py-1">
-              <Star className="w-3 h-3 mr-1 fill-current" />
-              Featured
-            </Badge>
-          )}
-        </div>
-      )}
-
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-gray-900 to-black border border-gray-200 group-hover:scale-110 transition-transform duration-300">
-              <TypeIcon className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Badge variant="secondary" className={cn("text-xs font-semibold px-3 py-1", getTypeColor())}>
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </Badge>
-              
-            </div>
-          </div>
-        </div>
-
-        <CardTitle className="text-xl font-bold text-black group-hover:text-gray-900 transition-colors line-clamp-2 leading-tight">
-          {title}
-        </CardTitle>
-
-        {summary && (
-          <CardDescription className="text-gray-700 line-clamp-3 leading-relaxed font-medium">
-            {summary}
-          </CardDescription>
-        )}
-      </CardHeader>
-      
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between text-sm text-gray-600 mb-4 font-medium">
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span className="font-semibold">{author}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span>{format(new Date(createdAt), 'MMM dd, yyyy')}</span>
-          </div>
-        </div>
-
-        {tagList.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {tagList.map((tag, index) => (
-              <Badge key={index} variant="outline" className="text-xs font-medium border-gray-300 hover:border-gray-900 transition-colors">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        <Link to={href}>
-          <Button variant="ghost" className="w-full justify-between group-hover:bg-gray-900 group-hover:text-white transition-all duration-300 font-semibold py-3 rounded-xl border border-gray-200 group-hover:border-gray-900">
-            Read Full Article
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-2 transition-transform duration-300" />
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  );
-};
-
-const FeaturedContent = () => {
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [researchPapers, setResearchPapers] = useState<ResearchPaper[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [featuredBlog, setFeaturedBlog] = useState<BlogPost | null>(null);
+  const [trendingContent, setTrendingContent] = useState<(BlogPost | Note)[]>([]);
+  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Fetch featured and trending content
   useEffect(() => {
-    const fetchContent = async () => {
+    const fetchFeaturedContent = async () => {
       try {
         setLoading(true);
-        
-        // Fetch featured/recent content
-        const [blogsResponse, researchResponse, notesResponse] = await Promise.all([
-          contentApi.getBlogPosts({ limit: 3, status: 'Active' }),
-          contentApi.getResearchPapers({ limit: 3 }),
-          contentApi.getNotes({ limit: 3, sort_by: 'recent' })
+
+        // Fetch featured blog post
+        const blogResponse = await contentApi.getBlogPosts({
+          limit: 1,
+          sort_by: 'popular'
+        });
+        if (blogResponse.blog_posts.length > 0) {
+          setFeaturedBlog(blogResponse.blog_posts[0]);
+        }
+
+        // Fetch trending content (mix of blogs and notes)
+        const [trendingBlogs, trendingNotes] = await Promise.all([
+          contentApi.getBlogPosts({ limit: 3, sort_by: 'popular' }),
+          contentApi.getNotes({ limit: 3, sort_by: 'popular' })
         ]);
 
-        setBlogPosts(blogsResponse.blog_posts || []);
-        setResearchPapers(researchResponse.research_papers || []);
-        setNotes(notesResponse.notes || []);
+        const combined = [
+          ...trendingBlogs.blog_posts.map(post => ({ ...post, type: 'blog' as const })),
+          ...trendingNotes.notes.map(note => ({ ...note, type: 'note' as const }))
+        ].slice(0, 4);
+
+        setTrendingContent(combined);
+
+        // Fetch recent notes
+        const recentNotesResponse = await contentApi.getNotes({
+          limit: 3,
+          sort_by: 'recent'
+        });
+        setRecentNotes(recentNotesResponse.notes);
+
       } catch (error) {
-        console.error('Error fetching content:', error);
+        console.error('Error fetching featured content:', error);
+        // Use fallback data
+        setFeaturedBlog({
+          content_id: 1,
+          user_id: 1,
+          title: 'Understanding Constitutional Law: A Comprehensive Guide',
+          summary: 'An in-depth exploration of constitutional principles and their modern applications in legal practice.',
+          content: '',
+          featured_image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&h=400&fit=crop&crop=center',
+          tags: 'constitution,law,government',
+          created_at: '2024-01-15T00:00:00Z',
+          updated_at: '2024-01-15T00:00:00Z',
+          status: 'published',
+          is_featured: true,
+          category: 'Constitutional Law',
+          allow_comments: true,
+          is_published: true,
+          publication_date: '2024-01-15T00:00:00Z',
+          author_name: 'Dr. Sarah Johnson',
+          comment_count: 23,
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchContent();
+    fetchFeaturedContent();
   }, []);
 
-  const ContentSkeleton = () => (
-    <Card className="border border-gray-200">
-      <CardHeader>
-        <div className="flex items-center gap-3 mb-3">
-          <Skeleton className="h-9 w-9 rounded-lg" />
-          <Skeleton className="h-5 w-20" />
+  // Save content to user library
+  const handleSaveContent = async (contentId: number, title: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save content.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await userApi.saveContent({
+        content_id: contentId,
+        notes: `Saved: ${title}`
+      });
+      toast({
+        title: "Success",
+        description: "Content saved to your library!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save content.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const renderTrendingItem = (item: any, index: number) => {
+    const isFirst = index === 0;
+
+    return (
+      <Card
+        key={`${item.type}-${item.content_id}`}
+        className={cn(
+          "group cursor-pointer transition-all duration-300 hover:shadow-lg",
+          "border border-gray-200 hover:border-lawvriksh-navy/30",
+          isFirst ? "md:col-span-2 md:row-span-2" : ""
+        )}
+      >
+        <Link
+          to={item.type === 'blog' ? `/blogs/${item.content_id}` : `/notes/${item.note_id || item.content_id}`}
+          className="block h-full"
+        >
+          <CardHeader className={cn("pb-3", isFirst ? "p-6" : "p-4")}>
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "p-1.5 rounded-md",
+                  item.type === 'blog'
+                    ? "bg-lawvriksh-gold/10 text-lawvriksh-navy"
+                    : "bg-lawvriksh-burgundy/10 text-lawvriksh-burgundy"
+                )}>
+                  {item.type === 'blog' ? (
+                    <FileText className="h-3 w-3" />
+                  ) : item.content_type === 'pdf' ? (
+                    <File className="h-3 w-3" />
+                  ) : (
+                    <FileText className="h-3 w-3" />
+                  )}
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {item.category}
+                </Badge>
+                {index < 3 && (
+                  <Badge className="bg-lawvriksh-gold text-lawvriksh-navy text-xs">
+                    <TrendingUp className="h-2 w-2 mr-1" />
+                    Trending
+                  </Badge>
+                )}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSaveContent(item.content_id, item.title);
+                }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
+              >
+                <Bookmark className="h-3 w-3" />
+              </Button>
+            </div>
+
+            <h3 className={cn(
+              "legal-heading font-semibold line-clamp-2 group-hover:text-lawvriksh-navy transition-colors",
+              isFirst ? "text-lg" : "text-sm"
+            )}>
+              {item.title}
+            </h3>
+
+            {isFirst && (
+              <p className="legal-text text-sm line-clamp-3 mt-2">
+                {item.summary || (item.content && item.content.substring(0, 120) + '...')}
+              </p>
+            )}
+          </CardHeader>
+
+          <CardContent className={cn("pt-0", isFirst ? "px-6 pb-6" : "px-4 pb-4")}>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <User className="h-2.5 w-2.5" />
+                  {item.author_name}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-2.5 w-2.5" />
+                  {format(new Date(item.created_at), 'MMM dd')}
+                </span>
+                {item.view_count && (
+                  <span className="flex items-center gap-1">
+                    <Eye className="h-2.5 w-2.5" />
+                    {item.view_count}
+                  </span>
+                )}
+              </div>
+
+              <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </CardContent>
+        </Link>
+      </Card>
+    );
+  };
+
+  if (loading) {
+    return (
+      <section className={cn("py-12 sm:py-16 lg:py-24 bg-gray-50", className)}>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Featured Article Skeleton */}
+            <div className="lg:col-span-2">
+              <Card className="h-96">
+                <CardHeader>
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Trending Content Skeleton */}
+            <div className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="h-24">
+                  <CardContent className="p-4">
+                    <Skeleton className="h-4 w-3/4 mb-2" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
-        <Skeleton className="h-6 w-full mb-2" />
-        <Skeleton className="h-4 w-3/4" />
-      </CardHeader>
-      <CardContent>
-        <div className="flex justify-between mb-3">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-20" />
-        </div>
-        <Skeleton className="h-9 w-full" />
-      </CardContent>
-    </Card>
-  );
+      </section>
+    );
+  }
 
   return (
-    <section className="py-24 bg-gradient-to-br from-gray-50 via-white to-gray-100/30 relative overflow-hidden">
-      {/* Subtle background pattern */}
-      <div className="absolute inset-0 opacity-[0.015]" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10zm10 0c0 5.5 4.5 10 10 10s10-4.5 10-10-4.5-10-10-10-10 4.5-10 10z'/%3E%3C/g%3E%3C/svg%3E")`
-      }} />
-
-      <div className="container mx-auto px-4 relative z-10">
-        {/* Professional Section Header */}
-        <div className="text-center mb-20">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-gray-900 to-black text-white px-8 py-3 rounded-2xl text-sm font-bold mb-8 shadow-lg">
-            <TrendingUp className="w-5 h-5" />
-            Curated Legal Content
-          </div>
-          <h2 className="text-5xl md:text-6xl font-black text-black mb-8 tracking-tight leading-tight">
-            Discover Legal Excellence
+    <section className={cn("py-12 sm:py-16 lg:py-24 bg-gray-50", className)}>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="text-center mb-12">
+          <h2 className="legal-heading text-3xl sm:text-4xl font-bold text-lawvriksh-navy mb-4">
+            Featured Legal Insights
           </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-gray-900 to-black mx-auto mb-8" />
-          <p className="text-xl md:text-2xl text-gray-700 max-w-4xl mx-auto font-light leading-relaxed">
-            Explore our meticulously curated collection of legal insights, scholarly research, and professional resources
-            crafted by distinguished industry experts and thought leaders.
+          <p className="legal-text text-lg max-w-2xl mx-auto">
+            Discover the most important legal developments and expert analysis
           </p>
         </div>
 
-        {/* Content Sections */}
-        <div className="space-y-16">
-          {/* Blog Posts */}
-          <div>
-            <div className="flex items-center justify-between mb-12">
-              <div className="flex items-center gap-6">
-                <div className="p-4 rounded-3xl bg-gradient-to-br from-gray-900 to-black shadow-xl border border-gray-200">
-                  <BookOpen className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-3xl font-bold text-black tracking-tight">Latest Publications</h3>
-                  <p className="text-gray-700 text-lg font-medium">Expert insights and analysis from legal professionals</p>
-                </div>
-              </div>
-              <Button asChild variant="outline" className="hidden sm:flex border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-all duration-300 px-6 py-3 rounded-xl font-semibold">
-                <Link to="/blogs">
-                  View All Publications
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <ContentSkeleton key={index} />
-                ))
-              ) : (
-                blogPosts.map((post) => (
-                  <ContentCard
-                    key={post.content_id}
-                    title={post.title}
-                    summary={post.summary}
-                    author={post.author_name}
-                    createdAt={post.created_at}
-                    type="blog"
-                    href={`/blogs/${post.content_id}`}
-                    featured={post.is_featured}
-                    tags={post.tags}
-                    coverImage={post.featured_image}
-                  />
-                ))
-              )}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Featured Article */}
+          {featuredBlog && (
+            <div className="lg:col-span-2">
+              <Card className="group cursor-pointer transition-all duration-300 hover:shadow-xl border-2 border-gray-200 hover:border-lawvriksh-navy/30 h-full">
+                <Link to={`/blogs/${featuredBlog.content_id}`} className="block h-full">
+                  {/* Featured Image */}
+                  {featuredBlog.featured_image && (
+                    <div className="relative aspect-[16/9] overflow-hidden rounded-t-lg">
+                      <img
+                        src={getOptimizedImageUrl(featuredBlog.featured_image, 800, 450, 'blog')}
+                        alt={featuredBlog.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => handleImageError(e, 'blog')}
+                      />
+                      <div className="absolute top-4 left-4">
+                        <Badge className="bg-lawvriksh-gold text-lawvriksh-navy">
+                          <Star className="h-3 w-3 mr-1" />
+                          Featured
+                        </Badge>
+                      </div>
+                      <div className="absolute top-4 right-4">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleSaveContent(featuredBlog.content_id, featuredBlog.title);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Bookmark className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
-          {/* Research Papers */}
-          <div>
-            <div className="flex items-center justify-between mb-12">
-              <div className="flex items-center gap-6">
-                <div className="p-4 rounded-3xl bg-gradient-to-br from-gray-800 to-gray-900 shadow-xl border border-gray-200">
-                  <FileText className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-3xl font-bold text-black tracking-tight">Scholarly Research</h3>
-                  <p className="text-gray-700 text-lg font-medium">Peer-reviewed research and academic publications</p>
-                </div>
-              </div>
-              <Button asChild variant="outline" className="hidden sm:flex border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-all duration-300 px-6 py-3 rounded-xl font-semibold">
-                <Link to="/research">
-                  View All Research
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <ContentSkeleton key={index} />
-                ))
-              ) : (
-                researchPapers.map((paper) => (
-                  <ContentCard
-                    key={paper.content_id}
-                    title={paper.title}
-                    summary={paper.abstract}
-                    author={paper.author_name}
-                    createdAt={paper.created_at}
-                    type="research"
-                    href={`/research/${paper.content_id}`}
-                    featured={paper.is_featured}
-                    tags={paper.keywords}
-                    coverImage={paper.featured_image}
-                  />
-                ))
-              )}
-            </div>
-          </div>
+                  <CardHeader className="p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge variant="outline">{featuredBlog.category}</Badge>
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        5 min read
+                      </span>
+                    </div>
 
-          {/* Notes */}
-          <div>
-            <div className="flex items-center justify-between mb-12">
-              <div className="flex items-center gap-6">
-                <div className="p-4 rounded-3xl bg-gradient-to-br from-black to-gray-800 shadow-xl border border-gray-200">
-                  <StickyNote className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-3xl font-bold text-black tracking-tight">Professional Insights</h3>
-                  <p className="text-gray-700 text-lg font-medium">Quick insights and expert professional tips</p>
+                    <h3 className="legal-heading text-2xl font-bold line-clamp-2 group-hover:text-lawvriksh-navy transition-colors mb-3">
+                      {featuredBlog.title}
+                    </h3>
+
+                    <p className="legal-text line-clamp-3 mb-4">
+                      {featuredBlog.summary}
+                    </p>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          {featuredBlog.author_name}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {format(new Date(featuredBlog.created_at), 'MMM dd, yyyy')}
+                        </span>
+                        {featuredBlog.comment_count > 0 && (
+                          <span className="flex items-center gap-1">
+                            <MessageSquare className="h-4 w-4" />
+                            {featuredBlog.comment_count}
+                          </span>
+                        )}
+                      </div>
+
+                      <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-lawvriksh-navy" />
+                    </div>
+                  </CardHeader>
+                </Link>
+              </Card>
+            </div>
+          )}
+
+          {/* Trending Content Sidebar */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="legal-heading text-xl font-semibold text-lawvriksh-navy mb-4 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Trending Now
+              </h3>
+
+              <div className="grid grid-cols-1 gap-4">
+                {trendingContent.slice(0, 4).map((item, index) => renderTrendingItem(item, index))}
+              </div>
+            </div>
+
+            {/* Recent Notes */}
+            {recentNotes.length > 0 && (
+              <div>
+                <h3 className="legal-heading text-xl font-semibold text-lawvriksh-navy mb-4 flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Latest Notes
+                </h3>
+
+                <div className="space-y-3">
+                  {recentNotes.map((note) => (
+                    <Card key={note.note_id} className="group cursor-pointer hover:shadow-md transition-all duration-200">
+                      <Link to={`/notes/${note.note_id}`} className="block p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="p-1.5 rounded-md bg-lawvriksh-burgundy/10 text-lawvriksh-burgundy flex-shrink-0">
+                            {note.content_type === 'pdf' ? (
+                              <File className="h-3 w-3" />
+                            ) : (
+                              <FileText className="h-3 w-3" />
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h4 className="legal-heading text-sm font-medium line-clamp-1 group-hover:text-lawvriksh-navy transition-colors">
+                              {note.title}
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {note.author_name} • {format(new Date(note.created_at), 'MMM dd')}
+                            </p>
+                          </div>
+
+                          <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 flex-shrink-0" />
+                        </div>
+                      </Link>
+                    </Card>
+                  ))}
                 </div>
               </div>
-              <Button asChild variant="outline" className="hidden sm:flex border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-all duration-300 px-6 py-3 rounded-xl font-semibold">
-                <Link to="/notes">
-                  View All Insights
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <ContentSkeleton key={index} />
-                ))
-              ) : (
-                notes.map((note) => (
-                  <ContentCard
-                    key={note.content_id}
-                    title={note.title}
-                    summary={note.summary}
-                    author={note.author_name}
-                    createdAt={note.created_at}
-                    type="note"
-                    href={`/notes/${note.content_id}`}
-                    featured={false}
-                    tags={note.category}
-                  />
-                ))
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>

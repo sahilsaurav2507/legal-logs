@@ -89,6 +89,11 @@ const CreateEditBlogPost = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Prevent double submission
+    if (saving) {
+      return;
+    }
+
     if (!formData.title.trim() || !formData.content.trim()) {
       toast({
         title: "Validation Error",
@@ -129,19 +134,34 @@ const CreateEditBlogPost = () => {
       }
 
       navigate('/blogs');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving blog post:', err);
-      toast({
-        title: "Error",
-        description: "Failed to save blog post. Please try again.",
-        variant: "destructive",
-      });
+
+      // Handle specific duplicate title error
+      if (err.message && err.message.includes('already exists')) {
+        toast({
+          title: "Duplicate Title",
+          description: "A blog post with this title already exists. Please use a different title.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save blog post. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setSaving(false);
     }
   };
 
   const handleSaveDraft = async () => {
+    // Prevent double submission
+    if (saving) {
+      return;
+    }
+
     if (!formData.title.trim()) {
       toast({
         title: "Validation Error",
@@ -179,13 +199,23 @@ const CreateEditBlogPost = () => {
         navigate(`/blogs/${response.content_id}/edit`);
         return;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving draft:', err);
-      toast({
-        title: "Error",
-        description: "Failed to save draft. Please try again.",
-        variant: "destructive",
-      });
+
+      // Handle specific duplicate title error
+      if (err.message && err.message.includes('already exists')) {
+        toast({
+          title: "Duplicate Title",
+          description: "A blog post with this title already exists. Please use a different title.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save draft. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setSaving(false);
     }

@@ -18,7 +18,6 @@ import {
 import { ArrowLeft, Save, Loader2, FileText, Users, Calendar, Link as LinkIcon, Upload } from 'lucide-react';
 import { contentApi } from '@/services/api';
 import ResearchPaperPDFUpload from '@/components/research/ResearchPaperPDFUpload';
-import { API_BASE_URL } from '@/services/api';
 
 const CreateEditResearchPaper = () => {
   const { id } = useParams();
@@ -110,7 +109,7 @@ const CreateEditResearchPaper = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/research-papers/upload-pdf`, {
+      const response = await fetch('http://localhost:5000/api/research-papers/upload-pdf', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('session_token')}`,

@@ -45,57 +45,45 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   delay = 0
 }) => {
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden border-2 border-gray-100 hover:border-gray-900 transition-all duration-700",
-        "hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)] hover:-translate-y-3 bg-white transform-gpu"
-      )}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      {/* Sophisticated Background Gradient */}
-      <div className={cn(
-        "absolute inset-0 opacity-0 group-hover:opacity-[0.03] transition-opacity duration-700",
-        `bg-gradient-to-br ${gradient}`
-      )} />
-
-      <CardHeader className="relative z-10 pb-6">
+    <Card className="border-2 border-gray-100 bg-white shadow-lg">
+      <CardHeader className="pb-6">
         <div className="flex items-start justify-between mb-6">
           <div className={cn(
-            "p-5 rounded-3xl transition-all duration-500 group-hover:scale-110 shadow-lg border border-gray-200",
+            "p-5 rounded-3xl shadow-lg border border-gray-200",
             `bg-gradient-to-br ${gradient}`
           )}>
             <Icon className="h-10 w-10 text-white" />
           </div>
           {badge && (
-            <Badge className="bg-gradient-to-r from-gray-900 to-black text-white font-bold px-3 py-1 text-xs">
+            <Badge className="bg-lawvriksh-navy text-white font-bold px-3 py-1 text-xs">
               {badge}
             </Badge>
           )}
         </div>
 
-        <CardTitle className="text-2xl font-bold text-black group-hover:text-gray-900 transition-colors tracking-tight leading-tight">
+        <CardTitle className="legal-heading text-2xl font-bold text-lawvriksh-navy tracking-tight leading-tight">
           {title}
         </CardTitle>
 
-        <CardDescription className="text-gray-700 leading-relaxed text-lg font-medium">
+        <CardDescription className="legal-text text-gray-700 leading-relaxed text-lg font-medium">
           {description}
         </CardDescription>
       </CardHeader>
-      
-      <CardContent className="relative z-10">
+
+      <CardContent>
         <ul className="space-y-4 mb-8">
           {features.map((feature, index) => (
             <li key={index} className="flex items-center gap-4 text-base text-gray-700 font-medium">
-              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-              <span>{feature}</span>
+              <CheckCircle className="h-5 w-5 text-lawvriksh-gold flex-shrink-0" />
+              <span className="legal-text">{feature}</span>
             </li>
           ))}
         </ul>
 
-        <Button asChild className="w-full group-hover:bg-gray-900 group-hover:text-white transition-all duration-500 font-semibold py-3 rounded-xl border border-gray-200 group-hover:border-gray-900 text-lg">
+        <Button asChild className="w-full bg-lawvriksh-navy text-white font-semibold py-3 rounded-xl shadow-lg text-lg">
           <Link to={href}>
             Explore Service
-            <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
+            <ArrowRight className="ml-3 h-5 w-5" />
           </Link>
         </Button>
       </CardContent>
@@ -211,25 +199,25 @@ const ServiceShowcase = () => {
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-br from-white via-gray-50/30 to-white relative overflow-hidden">
+    <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-br from-white via-gray-50/30 to-white relative overflow-hidden">
       {/* Sophisticated background pattern */}
       <div className="absolute inset-0 opacity-[0.015]" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M40 40c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm20 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
       }} />
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Professional Section Header */}
         <div className="text-center mb-20">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-gray-900 to-black text-white px-8 py-3 rounded-2xl text-sm font-bold mb-8 shadow-xl">
+          <div className="inline-flex items-center gap-3 bg-lawvriksh-navy text-white px-8 py-3 rounded-lg text-sm font-bold mb-8 shadow-lg">
             <Target className="w-5 h-5" />
             Professional Services
           </div>
-          <h2 className="text-5xl md:text-6xl font-black text-black mb-8 tracking-tight leading-tight">
+          <h2 className="legal-heading text-5xl md:text-6xl font-bold text-lawvriksh-navy mb-8 tracking-tight leading-tight">
             Everything You Need for Legal Excellence
           </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-gray-900 to-black mx-auto mb-8" />
-          <p className="text-xl md:text-2xl text-gray-700 max-w-4xl mx-auto font-light leading-relaxed">
-            From cutting-edge research to exclusive career opportunities, LawFort provides comprehensive
+          <div className="w-24 h-1 bg-lawvriksh-gold mx-auto mb-8" />
+          <p className="legal-text text-xl md:text-2xl text-gray-700 max-w-4xl mx-auto font-light leading-relaxed">
+            From cutting-edge research to exclusive career opportunities, LawVriksh provides comprehensive
             resources for every stage of your distinguished legal journey.
           </p>
         </div>
@@ -240,7 +228,7 @@ const ServiceShowcase = () => {
             <ServiceCard
               key={index}
               {...service}
-              delay={index * 100}
+              delay={0}
             />
           ))}
         </div>
@@ -248,24 +236,24 @@ const ServiceShowcase = () => {
         {/* Platform Features */}
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl p-8 md:p-12">
           <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-black mb-4 tracking-tight">
-              Why Choose LawFort?
+            <h3 className="legal-heading text-3xl font-bold text-lawvriksh-navy mb-4 tracking-tight">
+              Why Choose LawVriksh?
             </h3>
-            <p className="text-gray-600 text-lg legal-text">
+            <p className="legal-text text-gray-600 text-lg">
               Built by legal professionals, for legal professionals
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {platformFeatures.map((feature, index) => (
-              <div key={index} className="text-center group">
-                <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-gray-800 to-black mb-4 group-hover:scale-110 transition-transform duration-300">
+              <div key={index} className="text-center">
+                <div className="inline-flex p-4 rounded-2xl bg-lawvriksh-navy mb-4 shadow-lg">
                   <feature.icon className="h-8 w-8 text-white" />
                 </div>
-                <h4 className="text-lg font-bold text-black mb-2 tracking-tight">
+                <h4 className="legal-heading text-lg font-bold text-lawvriksh-navy mb-2 tracking-tight">
                   {feature.title}
                 </h4>
-                <p className="text-gray-600 text-sm legal-text">
+                <p className="legal-text text-gray-600 text-sm">
                   {feature.description}
                 </p>
               </div>
@@ -275,22 +263,22 @@ const ServiceShowcase = () => {
 
         {/* CTA Section */}
         <div className="text-center mt-16">
-          <div className="bg-gradient-to-r from-black via-gray-900 to-gray-800 rounded-2xl p-8 md:p-12 text-white">
-            <h3 className="text-3xl font-bold mb-4 tracking-tight">
+          <div className="bg-lawvriksh-navy rounded-2xl p-8 md:p-12 text-white shadow-lg">
+            <h3 className="legal-heading text-3xl font-bold mb-4 tracking-tight">
               Ready to Elevate Your Legal Career?
             </h3>
-            <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto legal-text">
-              Join thousands of legal professionals who trust LawFort for their career development 
+            <p className="legal-text text-gray-200 text-lg mb-8 max-w-2xl mx-auto">
+              Join thousands of legal professionals who trust LawVriksh for their career development
               and professional growth.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="bg-white text-black hover:bg-gray-100">
+              <Button asChild size="lg" className="bg-lawvriksh-gold text-lawvriksh-navy font-semibold">
                 <Link to="/signup">
                   Get Started Free
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="border-white/30 text-white bg-white/10 hover:bg-white/20 hover:text-white">
+              <Button asChild variant="outline" size="lg" className="border-white text-white">
                 <Link to="/blogs">
                   Explore Content
                 </Link>

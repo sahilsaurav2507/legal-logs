@@ -76,31 +76,24 @@ const AuthHeader = () => {
   return (
     <header className={cn(
       "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-      isScrolled || !isHomePage ? "bg-white/95 shadow-lg backdrop-blur-sm py-4 border-b border-gray-200" : "bg-transparent py-6"
+      "bg-white/95 shadow-lg backdrop-blur-sm py-4 border-b border-gray-200"
     )}>
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center group">
-            <div className="h-10 w-10 bg-gradient-to-br from-black to-gray-800 rounded-xl flex items-center justify-center mr-3 shadow-lg border border-gray-300 group-hover:scale-105 transition-transform duration-300">
-              <span className="text-white font-bold text-lg">LF</span>
-            </div>
-            <span className={cn(
-              "font-bold text-xl transition-colors legal-heading",
-              isScrolled || !isHomePage ? "text-black" : "text-white"
-            )}>
-              LawFort
-            </span>
+            <img
+              src="/LawVriksh.png"
+              alt="LawVriksh"
+              className="h-12 w-auto mr-3 group-hover:scale-105 transition-transform duration-300"
+            />
           </Link>
 
           {/* Desktop Mega Navigation */}
           <nav className="hidden md:flex space-x-8">
             <Link
               to="/"
-              className={cn(
-                "font-medium transition-colors hover:text-gray-600 legal-text",
-                isScrolled || !isHomePage ? "text-black" : "text-white"
-              )}
+              className="font-medium transition-colors hover:text-gray-600 legal-text text-black"
             >
               Home
             </Link>
@@ -108,10 +101,7 @@ const AuthHeader = () => {
             {isAuthenticated && user && (
               <Link
                 to={user.role === 'User' ? '/dashboard' : '/editor-dashboard'}
-                className={cn(
-                  "font-medium transition-colors hover:text-gray-600 legal-text",
-                  isScrolled || !isHomePage ? "text-black" : "text-white"
-                )}
+                className="font-medium transition-colors hover:text-gray-600 legal-text text-black"
               >
                 Dashboard
               </Link>
@@ -120,10 +110,7 @@ const AuthHeader = () => {
             {/* Publications Mega Menu */}
             <div className="relative group">
               <button
-                className={cn(
-                  "font-medium transition-colors hover:text-gray-600 legal-text flex items-center",
-                  isScrolled || !isHomePage ? "text-black" : "text-white"
-                )}
+                className="font-medium transition-colors hover:text-gray-600 legal-text flex items-center text-black"
               >
                 Publications
                 <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,10 +177,7 @@ const AuthHeader = () => {
             {/* Resources Mega Menu */}
             <div className="relative group">
               <button
-                className={cn(
-                  "font-medium transition-colors hover:text-gray-600 legal-text flex items-center",
-                  isScrolled || !isHomePage ? "text-black" : "text-white"
-                )}
+                className="font-medium transition-colors hover:text-gray-600 legal-text flex items-center text-black"
               >
                 Resources
                 <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,10 +228,7 @@ const AuthHeader = () => {
             {/* Career Mega Menu */}
             <div className="relative group">
               <button
-                className={cn(
-                  "font-medium transition-colors hover:text-gray-600 legal-text flex items-center",
-                  isScrolled || !isHomePage ? "text-black" : "text-white"
-                )}
+                className="font-medium transition-colors hover:text-gray-600 legal-text flex items-center text-black"
               >
                 Career
                 <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,21 +280,6 @@ const AuthHeader = () => {
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated && user ? (
               <>
-                {/* Search Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  asChild
-                  className={cn(
-                    "transition-colors",
-                    isScrolled || !isHomePage ? "text-black hover:text-gray-600" : "text-white hover:text-gray-300"
-                  )}
-                >
-                  <Link to="/search">
-                    <Search className="h-5 w-5" />
-                  </Link>
-                </Button>
-
                 {/* Notifications */}
                 <NotificationDropdown />
 
@@ -323,7 +289,7 @@ const AuthHeader = () => {
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={user.profilePhoto} alt={user.fullName} />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
+                      <AvatarFallback className="bg-lawvriksh-navy text-white">
                         {getInitials(user.fullName)}
                       </AvatarFallback>
                     </Avatar>

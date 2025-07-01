@@ -280,14 +280,14 @@ const Notes = () => {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <div className="p-4 rounded-3xl bg-gradient-to-br from-gray-900 to-black shadow-xl border border-gray-200">
+                  <div className="p-4 rounded-3xl bg-gradient-to-br from-lawvriksh-navy to-lawvriksh-navy-dark shadow-xl border border-lawvriksh-navy/20">
                     <FileText className="h-8 w-8 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-4xl font-bold text-black tracking-tight modern-heading">
+                    <h1 className="text-4xl font-bold text-lawvriksh-navy tracking-tight legal-heading">
                       Legal Notes Collection
                     </h1>
-                    <p className="text-gray-700 text-lg font-medium mt-2">
+                    <p className="text-lawvriksh-gray text-lg font-medium mt-2 legal-text">
                       Discover, save, and organize professional legal notes and insights
                     </p>
                   </div>
@@ -325,15 +325,15 @@ const Notes = () => {
           {/* Public Notes Section */}
           <div className="space-y-6">
             {/* Enhanced Search and Filters */}
-            <Card className="border-2 border-gray-100 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white">
-              <CardHeader className="pb-4 bg-gradient-to-r from-gray-50 to-gray-100">
+            <Card className="border-2 border-lawvriksh-navy/20 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white hover:border-lawvriksh-navy/40">
+              <CardHeader className="pb-4 bg-gradient-to-r from-lawvriksh-navy/5 to-lawvriksh-navy/10">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-white shadow-md border border-gray-300">
-                    <Search className="h-5 w-5 text-gray-800" />
+                  <div className="p-2 rounded-xl bg-white shadow-md border border-lawvriksh-navy/20">
+                    <Search className="h-5 w-5 text-lawvriksh-navy" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg text-black modern-heading">Search & Filter Notes</CardTitle>
-                    <p className="text-gray-600 text-sm">Find notes by keywords, category, or author</p>
+                    <CardTitle className="text-lg text-lawvriksh-navy legal-heading">Search & Filter Notes</CardTitle>
+                    <p className="text-lawvriksh-gray text-sm legal-text">Find notes by keywords, category, or author</p>
                   </div>
                 </div>
               </CardHeader>

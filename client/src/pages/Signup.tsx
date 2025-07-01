@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import GoogleOAuthButton from '@/components/GoogleOAuthButton';
 import OAuthProfileCompletion from '@/components/OAuthProfileCompletion';
+import PracticeAreaSelect from '@/components/PracticeAreaSelect';
 import { Scale, UserPlus, ArrowRight, AlertCircle } from 'lucide-react';
 
 // Define form schema
@@ -267,10 +268,15 @@ const Signup = () => {
                       <FormItem>
                         <FormLabel>Practice Area *</FormLabel>
                         <FormDescription>
-                          E.g., Student, Corporate Law, Criminal Law, etc.
+                          Select your primary area of legal practice or study
                         </FormDescription>
                         <FormControl>
-                          <Input placeholder="Enter your practice area" {...field} />
+                          <PracticeAreaSelect
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Select your practice area"
+                            showContentStats={true}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

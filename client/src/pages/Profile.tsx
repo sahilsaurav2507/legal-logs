@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import EditProfileForm from '@/components/EditProfileForm';
 import {
   ExternalLink,
   MapPin,
@@ -48,9 +49,10 @@ import { Link } from 'react-router-dom';
 import { contentApi } from '@/services/api';
 
 const Profile = () => {
-  const { user, logout, requestEditorAccess } = useAuth();
+  const { user, logout, requestEditorAccess, refreshUser } = useAuth();
   const { toast } = useToast();
   const [isRequestingAccess, setIsRequestingAccess] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   if (!user) {
     return <div>Loading...</div>;
@@ -83,6 +85,27 @@ const Profile = () => {
     } finally {
       setIsRequestingAccess(false);
     }
+  };
+
+  const handleEditProfile = () => {
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+  };
+
+  const handleEditSuccess = async () => {
+    setIsEditingProfile(false);
+    // Refresh user data to show updated information
+    if (refreshUser) {
+      await refreshUser();
+    }
+    toast({
+      title: "Success",
+      description: "Profile updated successfully. Please refresh the page to see changes.",
+      variant: "default",
+    });
   };
 
   // Function to get role badge color
@@ -273,7 +296,14 @@ const Profile = () => {
 
             {/* Right column - Profile Details */}
             <div className="lg:col-span-2">
-              <Card className="border-2 border-gray-100 shadow-xl bg-white">
+              {isEditingProfile ? (
+                <EditProfileForm
+                  user={user}
+                  onCancel={handleCancelEdit}
+                  onSuccess={handleEditSuccess}
+                />
+              ) : (
+                <Card className="border-2 border-gray-100 shadow-xl bg-white">
                 <CardHeader className="pb-6 bg-gradient-to-r from-gray-50 to-gray-100">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-white shadow-md border border-gray-300">
@@ -484,6 +514,7 @@ const Profile = () => {
                 <CardFooter className="flex justify-end pt-6 bg-gray-50">
                   <Button
                     variant="outline"
+                    onClick={handleEditProfile}
                     className="border-2 border-gray-200 text-gray-700 hover:border-gray-900 hover:bg-gray-50 px-6 py-3 rounded-xl font-semibold transition-all duration-300 group"
                   >
                     <Edit className="h-4 w-4 mr-2" />
@@ -492,6 +523,7 @@ const Profile = () => {
                   </Button>
                 </CardFooter>
               </Card>
+              )}
 
               {/* Additional sections could be added here if needed */}
             </div>

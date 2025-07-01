@@ -12,7 +12,6 @@ import { ArrowLeft, MapPin, Clock, Calendar, Building, Users, Edit, Trash2, Book
 import { useAuth, Permission } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { contentApi, userApi, Internship } from '@/services/api';
-import { API_BASE_URL } from '@/services/api';
 
 const InternshipDetail = () => {
   const { id } = useParams();
@@ -118,7 +117,7 @@ const InternshipDetail = () => {
 
     try {
       setIsUploading(true);
-      const response = await fetch(`${API_BASE_URL}/api/upload/resume`, {
+      const response = await fetch('http://localhost:5000/api/upload/resume', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('session_token')}`,

@@ -105,18 +105,19 @@ const UserLayout: React.FC<UserLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Black & White Header with Navigation */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-300 shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-lawvriksh-navy/5 via-white to-lawvriksh-gold/5">
+      {/* Professional LawVriksh Header with Navigation */}
+      <header className="sticky top-0 z-40 bg-white border-b border-lawvriksh-navy/20 shadow-lg">
         <div className=" max-w-full  sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-3">
-                <div className="h-10 w-10 bg-gradient-to-br from-black to-gray-800 rounded-xl flex items-center justify-center shadow-lg border border-gray-300">
-                  <span className="text-white font-bold text-lg">LF</span>
-                </div>
-                <span className="text-xl font-bold text-black">LawFort</span>
+                <img
+                  src="/LawVriksh.png"
+                  alt="LawVriksh"
+                  className="h-10 w-auto"
+                />
               </Link>
             </div>
 

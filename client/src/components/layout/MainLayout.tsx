@@ -20,11 +20,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-lawvriksh-navy/5 via-white to-lawvriksh-gold/5">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-all duration-300"
+          className="fixed inset-0 z-40 bg-lawvriksh-navy/60 backdrop-blur-sm lg:hidden transition-all duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
