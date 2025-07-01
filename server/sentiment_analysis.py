@@ -270,14 +270,24 @@ def get_db_connection():
     try:
         from dotenv import load_dotenv
         load_dotenv()
-        
-        connection = mysql.connector.connect(
-            host=os.getenv('DB_HOST', 'localhost'),
-            user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', ''),
-            database=os.getenv('DB_NAME', 'lawfort'),
-            pool_size=int(os.getenv('DB_POOL_SIZE', 5))
-        )
+
+        # Database configuration
+        db_config = {
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'port': int(os.getenv('DB_PORT', 3306)),
+            'user': os.getenv('DB_USER', 'root'),
+            'password': os.getenv('DB_PASSWORD', ''),
+            'database': os.getenv('DB_NAME', 'lawfort'),
+            'autocommit': False,
+            'use_unicode': True,
+            'charset': 'utf8mb4'
+        }
+
+        # Add SSL configuration for production/cloud databases
+        if os.getenv('DB_HOST') != 'localhost' and os.getenv('DB_HOST'):
+            db_config['ssl_disabled'] = False
+
+        connection = mysql.connector.connect(**db_config)
         return connection
     except Exception as e:
         logger.error(f"Database connection error: {str(e)}")
