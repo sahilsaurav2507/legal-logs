@@ -9,7 +9,7 @@ backlog = 2048
 workers = int(os.getenv('WEB_CONCURRENCY', 2))
 worker_class = "sync"
 worker_connections = 1000
-timeout = 30
+timeout = 60  # Increased for PDF processing and AI operations
 keepalive = 2
 
 # Restart workers after this many requests, to help prevent memory leaks
@@ -22,7 +22,7 @@ errorlog = "-"
 loglevel = "info"
 
 # Process naming
-proc_name = "lawfort-backend"
+proc_name = "legal-logs-backend"
 
 # Server mechanics
 preload_app = True
