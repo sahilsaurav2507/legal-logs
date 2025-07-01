@@ -1,5 +1,5 @@
 // API service for backend communication
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://www.lawvriksh.com/';
 
 // Types for API responses
 export interface LoginResponse {
