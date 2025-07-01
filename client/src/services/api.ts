@@ -1,5 +1,5 @@
 // API service for backend communication
-const API_BASE_URL = 'https://www.lawvriksh.com/';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 // Types for API responses
 export interface LoginResponse {
