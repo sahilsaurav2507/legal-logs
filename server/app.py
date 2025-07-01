@@ -22,9 +22,14 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 # Enable CORS for all routes with specific configuration
+# Get allowed origins from environment variable, fallback to localhost for development
+allowed_origins = os.getenv('FRONTEND_URL','https://legal-logs.onrender.com').split(',')
+# Add common development URLs
+allowed_origins.extend(['https://legal-logs.onrender.com'])
+
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:8080", "http://localhost:8081"],
+        "origins": allowed_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
@@ -43,10 +48,11 @@ app.json_encoder = CustomJSONEncoder
 
 # MySQL Connection Pool Configuration
 db_config = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'pabbo@123'),  # Default to your current password if env var not set
-    'database': os.getenv('DB_NAME', 'lawfort'),
+    'host': os.getenv('DB_HOST', 'mysql-1c58266a-prabhjotjaswal08-77ed.e.aivencloud.com'),
+    'port': int(os.getenv('DB_PORT', 14544)),
+    'user': os.getenv('DB_USER', 'avnadmin'),
+    'password': os.getenv('DB_PASSWORD', 'AVNS_IJYG8aEFX5D0ugOuMng'),  # Default to your current password if env var not set
+    'database': os.getenv('DB_NAME', 'defaultdb'),
     'pool_name': 'lawfort_pool',
     'pool_size': int(os.getenv('DB_POOL_SIZE', 5))
 }
@@ -191,6 +197,31 @@ def log_email_in_db(sender_id, _recipient_emails, _subject, _content, status):
     """
     # TODO: Implement actual email logging to database
     return True
+
+# Health check endpoint for deployment platforms
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring and deployment platforms"""
+    try:
+        # Test database connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status': 'healthy',
+            'message': 'Backend is running and database is accessible',
+            'timestamp': datetime.now().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'message': f'Database connection failed: {str(e)}',
+            'timestamp': datetime.now().isoformat()
+        }), 503
 
 @app.route('/register', methods=['POST'])
 def register_user():
@@ -6200,7 +6231,7 @@ def update_internship_application_status(user_id, application_id):
 # Health check endpoint
 @app.route('/', methods=['GET'])
 @app.route('/health', methods=['GET'])
-def health_check():
+def health_check_root():
     try:
         # Test database connection
         connection = get_db_connection()
@@ -7309,4 +7340,8 @@ def grammar_checker_health():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get configuration from environment variables
+    debug_mode = os.getenv('FLASK_ENV', 'production') == 'development'
+    port = int(os.getenv('PORT', 5000))
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
